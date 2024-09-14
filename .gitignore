@@ -1,0 +1,9 @@
+# Website related files
+website/.hugo_build.lock
+website/public/
+website/themes/hugo-book/exampleSite
+website/resources/_gen/assets/
+
+# MacOS related files
+.DS_Store
+
