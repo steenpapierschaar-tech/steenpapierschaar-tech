@@ -14,11 +14,10 @@ enableGitInfo = true
   unsafe = true
 
 [params]
-  # (Optional, default light) Sets color theme: light, dark or auto.
-  # Theme 'auto' switches between dark and light modes based on browser/os preferences
-  BookTheme = 'auto'
+    # Set the theme to light or dark
+    BookTheme = 'auto'
 
-    BookRepo = 'https://github.com/jjgroenendijk/muskrattrap'
+    BookRepo = 'https://github.com/steenpapierschaar-tech/steenpapierschaar-tech'
     BookCommitPath = 'commit'
     BookEditPath = 'edit/main/website'
     BookSection = '*'
