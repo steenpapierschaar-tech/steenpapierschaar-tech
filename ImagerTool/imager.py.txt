@@ -1,0 +1,57 @@
+import os
+from picamzero import Camera
+from datetime import datetime
+
+# Set up PiCam
+camera = Camera()
+camera.resolution = (320, 240)  # Adjust resolution if needed
+camera.start_preview()
+
+# Create a dictionary for the character descriptions
+descriptions = {
+    "i": "ignore",
+    "r": "rock",
+    "p": "paper",
+    "s": "scissors",
+    "h": "hang_loose"
+}
+
+# Base directory where all folders will be created
+base_dir = "captured_images"
+
+# Create the base directory if it doesn't exist
+if not os.path.exists(base_dir):
+    os.makedirs(base_dir)
+
+def capture_image(description):
+    # Create a folder for each description if it doesn't exist
+    description_dir = os.path.join(base_dir, description)
+    if not os.path.exists(description_dir):
+        os.makedirs(description_dir)
+    
+    # Use a timestamp to ensure unique filenames
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{description_dir}/{description}_{timestamp}.jpg"
+    
+    # Capture the image
+    print(f"Taking photo: {filename}")
+    camera.capture_image(filename)
+
+# Infinite loop to get input from the user
+while True:
+    # Get input from the user
+    user_input = input("Enter a character (i, r, p, s, h) to take a photo or 'q' to quit: ").lower()
+
+    # If the user enters 'q', exit the loop
+    if user_input == 'q':
+        camera.stop_preview()
+        print("Exiting program.")
+        break
+
+    # Check if the input matches one of the characters
+    elif user_input in descriptions:
+        description = descriptions[user_input]
+        capture_image(description)
+    
+    else:
+        print("Invalid input. Please enter a valid character.")
