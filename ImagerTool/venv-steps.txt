@@ -3,7 +3,7 @@ python -m venv --system-site-packages venv
 //Activate virtual envoirement
 source venv/bin/activate
 //Install libraries using pip
-pip install numpy scipy scikit-learn imutils opencv-python matplotlib picamera
+pip install numpy scipy scikit-learn imutils opencv-python matplotlib
 
 //Run scripts 
 python script_xyz.py
