@@ -55,6 +55,7 @@ while True:
     # frame = np.rot90(frame,3)
 
     cv.imshow("Frame", frame)
+    cv.resizeWindow('Frame', 320,240)
 
     k = cv.waitKey(1) & 0xFF
 
