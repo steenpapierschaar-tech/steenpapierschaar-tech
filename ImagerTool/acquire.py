@@ -11,6 +11,7 @@
 #python script_xyz.py
 #######################################################################################################
 
+
 import os
 import time
 import cv2 as cv
@@ -51,8 +52,6 @@ while True:
 
     if frame is None:
         continue
-
-    # frame = np.rot90(frame,3)
 
     cv.imshow("Frame", frame)
     cv.resizeWindow('Frame', 320,240)
