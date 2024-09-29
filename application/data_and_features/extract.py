@@ -35,13 +35,25 @@ def getFeatures(contour):
     """ Return some simple contour features
         See https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_properties/py_contour_properties.html
     """ 
-    area = cv.contourArea(contour)  
+
+    area = cv.contourArea(contour)
+
     contourLength = cv.arcLength(contour, True)
+
     ConvexHull  = cv.convexHull(contour, returnPoints=False)
+    
+    num_convex_hull_points = len(ConvexHull)
+
+    sum_convex_hull_points = sum(list(map(sum, ConvexHull)))
+
     ConvexityDefects = getConvexityDefects(contour)
-    
-    features = np.array((contourLength, area, ConvexHull, ConvexityDefects))
-    
+
+    num_convexity_defects = len(ConvexityDefects)
+
+    sum_convexity_defects = sum(list(map(sum, ConvexityDefects)))
+
+    features = np.array([contourLength, area, num_convex_hull_points, num_convexity_defects, sum_convex_hull_points, sum_convexity_defects])
+
     return (features)
 
 
@@ -109,7 +121,10 @@ def getBlobFeatures(img_BW):
 
 if __name__ == "__main__":
     """ Test feature extraction functions"""
-    filename = r'G:\My Drive\data\gesture_data\hang_loose\1598367493.png'
+
+    __location__ = os.path.realpath(
+        os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    filename = os.path.join(__location__, 'demo.png')
         
     # load image and blur a bit to suppress noise
     img = cv.imread(filename)
@@ -137,6 +152,32 @@ if __name__ == "__main__":
 
     # draw the outline of the object
     cv.drawContours(img, [contour], -1, (0, 255, 0), 2)
+
+    area = cv.contourArea(contour)
+    print("[TEST] contour area: {}".format(area))
+
+    contourLength = cv.arcLength(contour, True)
+    print("[TEST] contour length: {}".format(contourLength))
+
+    ConvexHull  = cv.convexHull(contour, returnPoints=False)
+    
+    num_convex_hull_points = len(ConvexHull)
+    print("[TEST] num_convex_hull_points: {}".format(num_convex_hull_points))
+
+    sum_convex_hull_points = sum(list(map(sum, ConvexHull)))
+    print("[TEST] sum_convex_hull_points: {}".format(sum_convex_hull_points))
+
+    ConvexityDefects = getConvexityDefects(contour)
+    
+    num_convexity_defects = len(ConvexityDefects)
+    print("[TEST] num_convexity_defects: {}".format(num_convexity_defects))
+
+    sum_convexity_defects = sum(list(map(sum, ConvexityDefects)))
+    print("[TEST] sum_convexity_defects: {}".format(sum_convexity_defects))
+
+    features = np.array([contourLength, area, num_convex_hull_points, num_convexity_defects, sum_convex_hull_points, sum_convexity_defects])
+
+    print("[TEST] contour features: {}".format(features))
 
     # point out hull defects
     if defects is not None:
