@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from fetch_data import fetch_data
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -5,12 +6,11 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from tkinter import Tk
-from tkinter.filedialog import askdirectory
-
 if __name__ == "__main__":
     """feature exploration"""
-    data_path = askdirectory(title='Select Folder')
+    
+    # get the data path
+    data_path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'photo_dataset')
 
     # fetch the data
     gestures = fetch_data(data_path)
@@ -76,7 +76,5 @@ if __name__ == "__main__":
     corr = np.corrcoef(trainX, rowvar=False)
     ax4 = sns.heatmap(corr, annot=True, xticklabels=gestures.feature_names, yticklabels=gestures.feature_names)
     plt.tight_layout()
-    
-    
-    plt.show(block=True)
 
+    plt.show(block=True)

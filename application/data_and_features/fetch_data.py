@@ -15,7 +15,7 @@ def fetch_data(data_path):
     print("[INFO] images found: {}".format(len(file_list)))
 
     # intitialize data matrix with correct number of features
-    feature_names = ['area', 'contour', 'ConvexHull', 'ConvexityDefects']
+    feature_names = ['area', 'contour', 'num_convex_hull_points', 'num_convexity_defects', 'sum_convex_hull_points', 'sum_convexity_defects']
     data = np.empty((0,len(feature_names)), float)
     target = []
   
@@ -23,7 +23,6 @@ def fetch_data(data_path):
     for filename in file_list: #[::10]:
         # load image and blur a bit to suppress noise
         img = cv.imread(filename)
-
 
         # Apply GaussianBlur to reduce noise
         img_BW = cv.GaussianBlur(img, (21, 21), 0)
@@ -38,7 +37,6 @@ def fetch_data(data_path):
         img_BW = cv.dilate(img_BW, None, iterations=2)
         img_BW = cv.erode(img_BW, None, iterations=2)        
 
-
         # check if foreground is actually there
         if cv.countNonZero(img_BW) == 0:
             continue
@@ -49,7 +47,6 @@ def fetch_data(data_path):
 
         # find largest contour
         contour = getLargestContour(img_BW)
-
 
         # extract features from contour
         #features = getSimpleContourFeatures(contour)
@@ -94,11 +91,9 @@ def fetch_data(data_path):
 
 if __name__ == "__main__":
     """ Test fetching function"""
-    data_path = r'C:\Users\jeroe\Documents\HAN\Hoofdmodule EVML\steenpapierschaar-tech\ImagerTool\data\paper'
+    data_path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'photo_dataset')
     
     gestures = fetch_data(data_path)
 
     print(dir(gestures))
     print(gestures.unique_targets)
-    
- 
