@@ -3,7 +3,7 @@ import glob
 import cv2 as cv
 import numpy as np
 from segment import maskWhiteBG
-from extract import getLargestContour, getSimpleContourFeatures
+from extract import getLargestContour, getFeatures
 from sklearn.utils import Bunch
 
 def fetch_data(data_path):
@@ -15,7 +15,7 @@ def fetch_data(data_path):
     print("[INFO] images found: {}".format(len(file_list)))
 
     # intitialize data matrix with correct number of features
-    feature_names = ['area', 'perimeter', 'aspect_ratio', 'extent']
+    feature_names = ['area', 'contour', 'ConvexHull', 'ConvexityDefects']
     data = np.empty((0,len(feature_names)), float)
     target = []
   
@@ -52,7 +52,8 @@ def fetch_data(data_path):
 
 
         # extract features from contour
-        features = getSimpleContourFeatures(contour)
+        #features = getSimpleContourFeatures(contour)
+        features = getFeatures(contour)
         print("[INFO] contour features: {}".format(features))
 
         # extract label from folder name and stor

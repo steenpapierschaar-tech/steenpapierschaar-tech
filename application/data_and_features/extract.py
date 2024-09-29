@@ -31,15 +31,19 @@ def getConvexityDefects(contour):
 
     return defects
 
-def ownFunc(contour):
+def getFeatures(contour):
     """ Return some simple contour features
         See https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_properties/py_contour_properties.html
-    """       
-    hull = cv.contourArea(contour)
-    getConvexityDefects = cv.arcLength(contour, True)
-    features = np.array((contour, hull, getConvexityDefects))
+    """ 
+    area = cv.contourArea(contour)  
+    contourLength = cv.arcLength(contour, True)
+    ConvexHull  = cv.convexHull(contour, returnPoints=False)
+    ConvexityDefects = getConvexityDefects(contour)
+    
+    features = np.array((contourLength, area, ConvexHull, ConvexityDefects))
     
     return (features)
+
 
 def getSimpleContourFeatures(contour):
     """ Return some simple contour features
