@@ -5,10 +5,12 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from tkinter import Tk
+from tkinter.filedialog import askdirectory
 
 if __name__ == "__main__":
     """feature exploration"""
-    data_path = r'C:\Users\jeroe\Documents\HAN\Hoofdmodule EVML\steenpapierschaar-tech\ImagerTool\data'
+    data_path = askdirectory(title='Select Folder')
 
     # fetch the data
     gestures = fetch_data(data_path)
