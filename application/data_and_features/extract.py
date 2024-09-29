@@ -190,7 +190,3 @@ if __name__ == "__main__":
 
     # show result    
     cv.imshow("image", img)
-
-
-
-    

@@ -8,7 +8,7 @@ import seaborn as sns
 
 if __name__ == "__main__":
     """feature exploration"""
-    
+
     # get the data path
     data_path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'photo_dataset')
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # partition the data into training and testing splits using 75% of
     # the data for training and the remaining 25% for testing
     (trainX, testX, trainY, testY) = train_test_split(gestures.data, coded_labels,
-	test_size=0.25, stratify=gestures.target)#, random_state=42)
+    test_size=0.25, stratify=gestures.target)#, random_state=42)
 
     # Data preparation (note that a pipeline  would help here)
     trainX = StandardScaler().fit_transform(trainX)
@@ -34,15 +34,19 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     # show histograms of first 4 features
-    fig0, ax0 = plt.subplots(2, 2)
+    fig0, ax0 = plt.subplots(2, 3)
     sns.histplot(trainX[:,0], color="skyblue", bins=10, ax=ax0[0,0])
     sns.histplot(trainX[:,1], color="olive", bins=10, ax=ax0[0,1])#, axlabel=gestures.feature_names[1])
     sns.histplot(trainX[:,2], color="gold", bins=10, ax=ax0[1,0])#, axlabel=gestures.feature_names[2])
     sns.histplot(trainX[:,3], color="teal", bins=10, ax=ax0[1,1])#, axlabel=gestures.feature_names[3])
+    sns.histplot(trainX[:,4], color="red", bins=10, ax=ax0[0,2])#, axlabel=gestures.feature_names[4])
+    sns.histplot(trainX[:,5], color="blue", bins=10, ax=ax0[1,2])#, axlabel=gestures.feature_names[5])
     ax0[0,0].set_xlabel(gestures.feature_names[0])
     ax0[0,1].set_xlabel(gestures.feature_names[1])
     ax0[1,0].set_xlabel(gestures.feature_names[2])
     ax0[1,1].set_xlabel(gestures.feature_names[3])
+    ax0[0,2].set_xlabel(gestures.feature_names[4])
+    ax0[1,2].set_xlabel(gestures.feature_names[5])
     plt.tight_layout()
     
     # show scatter plot of features a and b
