@@ -8,6 +8,13 @@ import seaborn as sns
 
 if __name__ == "__main__":
     """feature exploration"""
+    #Features
+    area = 0
+    contour = 1
+    num_convex_hull_points = 2
+    num_convexity_defects = 3
+    sum_convex_hull_points = 4
+    sum_convexity_defects = 5
 
     # get the data path
     data_path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'photo_dataset')
@@ -50,13 +57,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     
 
-    #Features
-    area = 0
-    contour = 1
-    num_convex_hull_points = 2
-    num_convexity_defects = 3
-    sum_convex_hull_points = 4
-    sum_convexity_defects = 5
+
 
 
     # show scatter plot of features area and contour
@@ -78,7 +79,6 @@ if __name__ == "__main__":
 
 
     # show scatter plot of features a and b
- # show scatter plot of features a and b
     fig1 = plt.figure()
     ax1 = sns.scatterplot(x=trainX[:,num_convexity_defects], y=trainX[:,sum_convex_hull_points], hue=le.inverse_transform(trainY))
     ax1.set_title("Example of feature scatter plot")
