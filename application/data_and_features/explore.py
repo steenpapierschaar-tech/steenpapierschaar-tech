@@ -8,6 +8,13 @@ import seaborn as sns
 
 if __name__ == "__main__":
     """feature exploration"""
+    #Features
+    area = 0
+    contour = 1
+    num_convex_hull_points = 2
+    num_convexity_defects = 3
+    sum_convex_hull_points = 4
+    sum_convexity_defects = 5
 
     # get the data path
     data_path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'photo_dataset')
@@ -58,15 +65,6 @@ if __name__ == "__main__":
     ax1.set_xlabel(gestures.feature_names[area])
     ax1.set_ylabel(gestures.feature_names[contour])
     plt.tight_layout()
-
-##    # show joint distribution plot of features a and b for 2 selected labels
-##    a, b = 0, 1
-##    c, d = le.transform(['paper', 'rock'])
-##    sns.set_style("whitegrid")
-##    indices = np.where( (trainY==c) | (trainY==d))
-##    ax2 = sns.jointplot(x=trainX[indices,a], y=trainX[indices,b], kind="kde")
-##    ax2.set_axis_labels(gestures.feature_names[a], gestures.feature_names[b])
-##    plt.tight_layout()
     
     # show boxplot for a single feature
     plt.figure()
