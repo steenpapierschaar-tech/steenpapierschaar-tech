@@ -36,23 +36,29 @@ def getFeatures(contour):
         See https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_properties/py_contour_properties.html
     """ 
 
+    # basic contour features
     area = cv.contourArea(contour)
 
+    # get contour length
     contourLength = cv.arcLength(contour, True)
 
-    ConvexHull  = cv.convexHull(contour, returnPoints=False)
+    # get convex hull
+    ConvexHull  = cv.convexHull(contour, returnPoints=True)
     
-    num_convex_hull_points = len(ConvexHull)
-
-    sum_convex_hull_points = sum(list(map(sum, ConvexHull)))
-
+    # Get convex hull length
+    ConvexHullLength = cv.arcLength(ConvexHull, True)
+    
+    # get the top 5 convexity defects
     ConvexityDefects = getConvexityDefects(contour)
+    
+    # Select only the 5 largest defects
+    ConvexityDefects = np.flip(np.sort(ConvexityDefects))[:5]
 
-    num_convexity_defects = len(ConvexityDefects)
+    # Get average of top 5 defects
+    ConvexityDefects = np.mean(ConvexityDefects)
 
-    sum_convexity_defects = sum(list(map(sum, ConvexityDefects)))
-
-    features = np.array([contourLength, area, num_convex_hull_points, num_convexity_defects, sum_convex_hull_points, sum_convexity_defects])
+    # compile a feature vector
+    features = np.array([area, contourLength, ConvexHullLength, ConvexityDefects])
 
     return (features)
 
@@ -167,26 +173,18 @@ if __name__ == "__main__":
     sum_convex_hull_points = sum(list(map(sum, ConvexHull)))
     print("[TEST] sum_convex_hull_points: {}".format(sum_convex_hull_points))
 
+    # get the top 5 convexity defects
     ConvexityDefects = getConvexityDefects(contour)
     
-    num_convexity_defects = len(ConvexityDefects)
-    print("[TEST] num_convexity_defects: {}".format(num_convexity_defects))
+    # Select only the 5 largest defects
+    ConvexityDefects = np.flip(np.sort(ConvexityDefects))[:5]
+    
+    # Get average of top 5 defects
+    ConvexityDefects = np.mean(ConvexityDefects)
 
-    sum_convexity_defects = sum(list(map(sum, ConvexityDefects)))
-    print("[TEST] sum_convexity_defects: {}".format(sum_convexity_defects))
-
-    features = np.array([contourLength, area, num_convex_hull_points, num_convexity_defects, sum_convex_hull_points, sum_convexity_defects])
+    features = np.array([contourLength, area, num_convex_hull_points, ConvexityDefects])
 
     print("[TEST] contour features: {}".format(features))
-
-    # point out hull defects
-    if defects is not None:
-        for s,e,f,d in defects:
-            start = tuple(contour[s])
-            end = tuple(contour[e])
-            far = tuple(contour[f])
-            cv.line(img,start,end,[0,255,255],2)
-            cv.circle(img,far,5,[0,0,255],-1)
 
     # show result    
     cv.imshow("image", img)

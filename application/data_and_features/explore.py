@@ -39,25 +39,17 @@ if __name__ == "__main__":
     sns.histplot(trainX[:,1], color="olive", bins=10, ax=ax0[0,1])#, axlabel=gestures.feature_names[1])
     sns.histplot(trainX[:,2], color="gold", bins=10, ax=ax0[1,0])#, axlabel=gestures.feature_names[2])
     sns.histplot(trainX[:,3], color="teal", bins=10, ax=ax0[1,1])#, axlabel=gestures.feature_names[3])
-    sns.histplot(trainX[:,4], color="red", bins=10, ax=ax0[0,2])#, axlabel=gestures.feature_names[4])
-    sns.histplot(trainX[:,5], color="blue", bins=10, ax=ax0[1,2])#, axlabel=gestures.feature_names[5])
     ax0[0,0].set_xlabel(gestures.feature_names[0])
     ax0[0,1].set_xlabel(gestures.feature_names[1])
     ax0[1,0].set_xlabel(gestures.feature_names[2])
     ax0[1,1].set_xlabel(gestures.feature_names[3])
-    ax0[0,2].set_xlabel(gestures.feature_names[4])
-    ax0[1,2].set_xlabel(gestures.feature_names[5])
     plt.tight_layout()
-    
 
     #Features
     area = 0
     contour = 1
-    num_convex_hull_points = 2
-    num_convexity_defects = 3
-    sum_convex_hull_points = 4
-    sum_convexity_defects = 5
-
+    convexHullLength = 2
+    convexityDefects = 3
 
     # show scatter plot of features area and contour
     fig1 = plt.figure()
@@ -65,25 +57,6 @@ if __name__ == "__main__":
     ax1.set_title("Example of feature scatter plot")
     ax1.set_xlabel(gestures.feature_names[area])
     ax1.set_ylabel(gestures.feature_names[contour])
-    plt.tight_layout()
-
-
-     # show scatter plot of features a and b
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,num_convex_hull_points], y=trainX[:,sum_convex_hull_points], hue=le.inverse_transform(trainY))
-    ax1.set_title("Example of feature scatter plot")
-    ax1.set_xlabel(gestures.feature_names[num_convex_hull_points])
-    ax1.set_ylabel(gestures.feature_names[sum_convex_hull_points])
-    plt.tight_layout()
-
-
-    # show scatter plot of features a and b
- # show scatter plot of features a and b
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,num_convexity_defects], y=trainX[:,sum_convex_hull_points], hue=le.inverse_transform(trainY))
-    ax1.set_title("Example of feature scatter plot")
-    ax1.set_xlabel(gestures.feature_names[num_convexity_defects])
-    ax1.set_ylabel(gestures.feature_names[sum_convex_hull_points])
     plt.tight_layout()
 
 ##    # show joint distribution plot of features a and b for 2 selected labels
