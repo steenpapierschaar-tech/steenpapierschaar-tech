@@ -11,10 +11,8 @@ if __name__ == "__main__":
     #Features
     area = 0
     contour = 1
-    num_convex_hull_points = 2
-    num_convexity_defects = 3
-    sum_convex_hull_points = 4
-    sum_convexity_defects = 5
+    convexHullLength = 2
+    convexityDefects = 3
 
     # get the data path
     data_path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'photo_dataset')
@@ -61,9 +59,33 @@ if __name__ == "__main__":
     # show scatter plot of features area and contour
     fig1 = plt.figure()
     ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,contour], hue=le.inverse_transform(trainY))
-    ax1.set_title("Example of feature scatter plot")
+    ax1.set_title("Scatter plot of area and contour")
     ax1.set_xlabel(gestures.feature_names[area])
     ax1.set_ylabel(gestures.feature_names[contour])
+    plt.tight_layout()
+    
+    # show scatter plot of features contourLength and convexHullLength
+    fig1 = plt.figure()
+    ax1 = sns.scatterplot(x=trainX[:,contour], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
+    ax1.set_title("Scatter plot of contourLength and convexHullLength")
+    ax1.set_xlabel(gestures.feature_names[contour])
+    ax1.set_ylabel(gestures.feature_names[convexHullLength])
+    plt.tight_layout()
+    
+    # show scatter plot of features contourLength and convexityDefects
+    fig1 = plt.figure()
+    ax1 = sns.scatterplot(x=trainX[:,contour], y=trainX[:,convexityDefects], hue=le.inverse_transform(trainY))
+    ax1.set_title("Scatter plot of contourLength and convexityDefects")
+    ax1.set_xlabel(gestures.feature_names[contour])
+    ax1.set_ylabel(gestures.feature_names[convexityDefects])
+    plt.tight_layout()
+    
+    # show scatter plot of features area and convexHullLength
+    fig1 = plt.figure()
+    ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
+    ax1.set_title("Scatter plot of contourLength and area")
+    ax1.set_xlabel(gestures.feature_names[area])
+    ax1.set_ylabel(gestures.feature_names[convexHullLength])
     plt.tight_layout()
     
     # show boxplot for a single feature
