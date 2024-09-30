@@ -9,5 +9,4 @@ website/resources/_gen/assets/
 
 # Python related files
 __pycache__/
-*/__pycache__/
 *.pyc
