@@ -52,7 +52,8 @@ def getFeatures(contour):
 
     sum_convexity_defects = sum(list(map(sum, ConvexityDefects)))
 
-    features = np.array([contourLength, area, num_convex_hull_points, num_convexity_defects, sum_convex_hull_points, sum_convexity_defects])
+    compactness = contourLength /area
+    features = np.array([contourLength, area, num_convex_hull_points, num_convexity_defects, sum_convex_hull_points, sum_convexity_defects, compactness])
 
     return (features)
 
