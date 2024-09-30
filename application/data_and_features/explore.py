@@ -49,13 +49,41 @@ if __name__ == "__main__":
     ax0[1,2].set_xlabel(gestures.feature_names[5])
     plt.tight_layout()
     
-    # show scatter plot of features a and b
-    a, b = 0, 1
+
+    #Features
+    area = 0
+    contour = 1
+    num_convex_hull_points = 2
+    num_convexity_defects = 3
+    sum_convex_hull_points = 4
+    sum_convexity_defects = 5
+
+
+    # show scatter plot of features area and contour
     fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,a], y=trainX[:,b], hue=le.inverse_transform(trainY))
+    ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,contour], hue=le.inverse_transform(trainY))
     ax1.set_title("Example of feature scatter plot")
-    ax1.set_xlabel(gestures.feature_names[a])
-    ax1.set_ylabel(gestures.feature_names[b])
+    ax1.set_xlabel(gestures.feature_names[area])
+    ax1.set_ylabel(gestures.feature_names[contour])
+    plt.tight_layout()
+
+
+     # show scatter plot of features a and b
+    fig1 = plt.figure()
+    ax1 = sns.scatterplot(x=trainX[:,num_convex_hull_points], y=trainX[:,sum_convex_hull_points], hue=le.inverse_transform(trainY))
+    ax1.set_title("Example of feature scatter plot")
+    ax1.set_xlabel(gestures.feature_names[num_convex_hull_points])
+    ax1.set_ylabel(gestures.feature_names[sum_convex_hull_points])
+    plt.tight_layout()
+
+
+    # show scatter plot of features a and b
+ # show scatter plot of features a and b
+    fig1 = plt.figure()
+    ax1 = sns.scatterplot(x=trainX[:,num_convexity_defects], y=trainX[:,sum_convex_hull_points], hue=le.inverse_transform(trainY))
+    ax1.set_title("Example of feature scatter plot")
+    ax1.set_xlabel(gestures.feature_names[num_convexity_defects])
+    ax1.set_ylabel(gestures.feature_names[sum_convex_hull_points])
     plt.tight_layout()
 
 ##    # show joint distribution plot of features a and b for 2 selected labels
@@ -68,11 +96,10 @@ if __name__ == "__main__":
 ##    plt.tight_layout()
     
     # show boxplot for a single feature
-    a = 1
     plt.figure()
-    ax3 = sns.boxplot(x=le.inverse_transform(trainY), y=trainX[:,a])
-    ax3.set_title(gestures.feature_names[a])
-    ax3.set_ylabel(gestures.feature_names[a])
+    ax3 = sns.boxplot(x=le.inverse_transform(trainY), y=trainX[:,area])
+    ax3.set_title(gestures.feature_names[area])
+    ax3.set_ylabel(gestures.feature_names[area])
     plt.tight_layout()
 
     # show feature correlation heatmap
