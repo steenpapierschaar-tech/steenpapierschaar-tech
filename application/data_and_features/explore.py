@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # show scatter plot of features area and convexHullLength
     fig1 = plt.figure()
     ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
-    ax1.set_title("Scatter plot of contourLength and area")
+    ax1.set_title("Scatter plot of convexHullLength and area")
     ax1.set_xlabel(gestures.feature_names[area])
     ax1.set_ylabel(gestures.feature_names[convexHullLength])
     plt.tight_layout()
