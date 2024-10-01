@@ -56,9 +56,11 @@ def getFeatures(contour):
 
     # Get average of top 5 defects
     ConvexityDefects = np.mean(ConvexityDefects)
+    
+    compactness = contourLength/area
 
     # compile a feature vector
-    features = np.array([area, contourLength, ConvexHullLength, ConvexityDefects])
+    features = np.array([area, contourLength, ConvexHullLength, ConvexityDefects,compactness])
 
     return (features)
 
