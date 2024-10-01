@@ -55,6 +55,7 @@ if __name__ == "__main__":
     contour = 1
     convexHullLength = 2
     convexityDefects = 3
+    compactness =4
 
     # show scatter plot of features area and contour
     fig1 = plt.figure()
@@ -87,6 +88,24 @@ if __name__ == "__main__":
     ax1.set_xlabel(gestures.feature_names[area])
     ax1.set_ylabel(gestures.feature_names[convexHullLength])
     plt.tight_layout()
+    
+    # show scatter plot of features area and compactness
+    fig1 = plt.figure()
+    ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
+    ax1.set_title("Scatter plot of compactness and area")
+    ax1.set_xlabel(gestures.feature_names[area])
+    ax1.set_ylabel(gestures.feature_names[compactness])
+    plt.tight_layout()
+    
+    # show boxplot for a single feature
+    plt.figure()
+    ax3 = sns.boxplot(x=le.inverse_transform(trainY), y=trainX[:,compactness])
+    ax3.set_title(gestures.feature_names[compactness])
+    ax3.set_ylabel(gestures.feature_names[compactness])
+    plt.tight_layout()
+
+
+    
     
     # show boxplot for a single feature
     plt.figure()

@@ -15,7 +15,8 @@ def fetch_data(data_path):
     print("[INFO] images found: {}".format(len(file_list)))
 
     # intitialize data matrix with correct number of features
-    feature_names = ['area', 'contourLength', 'ConvexHullLength', 'ConvexityDefects']
+    feature_names = ['area', 'contourLength', 'ConvexHullLength', 'ConvexityDefects','compactness']
+
     data = np.empty((0,len(feature_names)), float)
     target = []
   
