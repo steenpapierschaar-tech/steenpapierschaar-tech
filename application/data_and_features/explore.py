@@ -1,4 +1,5 @@
 import os
+import datetime
 import numpy as np
 from fetch_data import fetch_data
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -8,6 +9,14 @@ import seaborn as sns
 
 if __name__ == "__main__":
     """feature exploration"""
+    
+    # Create output directory with a timestamped subfolder
+    output_dir = 'output'
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_subdir = os.path.join(output_dir, timestamp)    
+    if not os.path.exists(output_subdir):
+        os.makedirs(output_subdir, exist_ok=True)
+
     #Features
     area = 0
     contour = 1
@@ -37,8 +46,9 @@ if __name__ == "__main__":
     ax.set_xticklabels(gestures.unique_targets)
     ax.set_title(data_path + ' count')
     plt.tight_layout()
+    plt.savefig(os.path.join(output_subdir, 'target_distribution.png'))
 
-    # show histograms of first 4 features
+    # Save all features in a single histogram
     fig0, ax0 = plt.subplots(2, 3)
     sns.histplot(trainX[:,0], color="skyblue", bins=10, ax=ax0[0,0])
     sns.histplot(trainX[:,1], color="olive", bins=10, ax=ax0[0,1])#, axlabel=gestures.feature_names[1])
@@ -49,75 +59,47 @@ if __name__ == "__main__":
     ax0[1,0].set_xlabel(gestures.feature_names[2])
     ax0[1,1].set_xlabel(gestures.feature_names[3])
     plt.tight_layout()
+    plt.savefig(os.path.join(output_subdir, 'histogram_all_features.png'))
 
     #Features
     area = 0
     contour = 1
     convexHullLength = 2
     convexityDefects = 3
-    compactness =4
+    compactness = 4
 
-    # show scatter plot of features area and contour
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,contour], hue=le.inverse_transform(trainY))
-    ax1.set_title("Scatter plot of area and contour")
-    ax1.set_xlabel(gestures.feature_names[area])
-    ax1.set_ylabel(gestures.feature_names[contour])
-    plt.tight_layout()
+    # Generate scatter plots of features in the dataset in a for loop
+    for i in range(0, trainX.shape[1]):
+        for j in range(i+1, trainX.shape[1]):
+            fig1 = plt.figure()
+            ax1 = sns.scatterplot(x=trainX[:,i], y=trainX[:,j], hue=le.inverse_transform(trainY))
+            ax1.set_title("Scatter plot of " + gestures.feature_names[i] + " and " + gestures.feature_names[j])
+            ax1.set_xlabel(gestures.feature_names[i])
+            ax1.set_ylabel(gestures.feature_names[j])
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_subdir, 'scatter_plot_' + gestures.feature_names[i] + '_' + gestures.feature_names[j] + '.png'))
     
-    # show scatter plot of features contourLength and convexHullLength
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,contour], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
-    ax1.set_title("Scatter plot of contourLength and convexHullLength")
-    ax1.set_xlabel(gestures.feature_names[contour])
-    ax1.set_ylabel(gestures.feature_names[convexHullLength])
-    plt.tight_layout()
-    
-    # show scatter plot of features contourLength and convexityDefects
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,contour], y=trainX[:,convexityDefects], hue=le.inverse_transform(trainY))
-    ax1.set_title("Scatter plot of contourLength and convexityDefects")
-    ax1.set_xlabel(gestures.feature_names[contour])
-    ax1.set_ylabel(gestures.feature_names[convexityDefects])
-    plt.tight_layout()
-    
-    # show scatter plot of features area and convexHullLength
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
-    ax1.set_title("Scatter plot of convexHullLength and area")
-    ax1.set_xlabel(gestures.feature_names[area])
-    ax1.set_ylabel(gestures.feature_names[convexHullLength])
-    plt.tight_layout()
-    
-    # show scatter plot of features area and compactness
-    fig1 = plt.figure()
-    ax1 = sns.scatterplot(x=trainX[:,area], y=trainX[:,convexHullLength], hue=le.inverse_transform(trainY))
-    ax1.set_title("Scatter plot of compactness and area")
-    ax1.set_xlabel(gestures.feature_names[area])
-    ax1.set_ylabel(gestures.feature_names[compactness])
-    plt.tight_layout()
-    
-    # show boxplot for a single feature
-    plt.figure()
-    ax3 = sns.boxplot(x=le.inverse_transform(trainY), y=trainX[:,compactness])
-    ax3.set_title(gestures.feature_names[compactness])
-    ax3.set_ylabel(gestures.feature_names[compactness])
-    plt.tight_layout()
+    # Save boxplots for all features
+    for i in range(0, trainX.shape[1]):
+        fig2 = plt.figure()
+        ax2 = sns.boxplot(x=le.inverse_transform(trainY), y=trainX[:,i])
+        ax2.set_title(gestures.feature_names[i])
+        ax2.set_ylabel(gestures.feature_names[i])
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_subdir, 'boxplot_' + gestures.feature_names[i] + '.png'))
 
-
-    
-    
-    # show boxplot for a single feature
-    plt.figure()
-    ax3 = sns.boxplot(x=le.inverse_transform(trainY), y=trainX[:,area])
-    ax3.set_title(gestures.feature_names[area])
-    ax3.set_ylabel(gestures.feature_names[area])
-    plt.tight_layout()
-
-    # show feature correlation heatmap
+    # Save feature correlation heatmap
     plt.figure()
     corr = np.corrcoef(trainX, rowvar=False)
     ax4 = sns.heatmap(corr, annot=True, xticklabels=gestures.feature_names, yticklabels=gestures.feature_names)
     plt.tight_layout()
-
+    plt.savefig(os.path.join(output_subdir, 'correlation_heatmap.png'))
+    
+    # Close all figures
+    plt.close('all')
+    
+    # Make sure all code is executed before closing
     plt.show(block=True)
+    
+    
+    print("[INFO] Done exploring features")

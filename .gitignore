@@ -12,3 +12,4 @@ __pycache__/
 *.pyc
 application/data_and_features/__pycache__/fetch_data.cpython-312.pyc
 .venv/
+output/

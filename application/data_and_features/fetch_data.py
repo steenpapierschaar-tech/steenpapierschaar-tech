@@ -42,9 +42,9 @@ def fetch_data(data_path):
         if cv.countNonZero(img_BW) == 0:
             continue
         
-        cv.imshow("Segmented image", img_BW)
+        #cv.imshow("Segmented image", img_BW)
 
-        cv.waitKey(0)
+        #cv.waitKey(0)
 
         # find largest contour
         contour = getLargestContour(img_BW)
@@ -63,13 +63,13 @@ def fetch_data(data_path):
 
         # draw outline, show image, and wait a bit
         cv.drawContours(img, [contour], -1, (0, 255, 0), 2)        
-        cv.imshow("image", img)
-        k = cv.waitKey(1) & 0xFF
+        #cv.imshow("image", img)
+        #k = cv.waitKey(1) & 0xFF
 
         #cv.waitKey(0)
         # if the `q` key or ESC was pressed, break from the loop
-        if k == ord("q") or k == 27:
-            break
+        #if k == ord("q") or k == 27:
+        #    break
 
     unique_targets = np.unique(target)
     print("[INFO] targets found: {}".format(unique_targets))
