@@ -15,7 +15,19 @@ def maskWhiteBG(img):
     img = cv.blur(img, (6, 6))
     
     # Create a copy of the image
-    img_hsl = img.copy()
+    img_hsl_pre = img.copy()
+
+    # Convert the image to HSL color space
+    img_hsl = cv.cvtColor(img_hsl_pre, cv.COLOR_BGR2HLS)
+
+    # Split the HSL channels
+    h, l, s = cv.split(img_hsl)
+
+    # Normalize the Lightness channel (L)
+    l_normalized = cv.normalize(l, None, 0, 255, cv.NORM_MINMAX)
+
+    # Merge the H, normalized L, and S channels back
+    img_hsl = cv.merge([h, l_normalized, s])
     
     # Convert the image to HSL color space
     img_hsl = cv.cvtColor(img_hsl, cv.COLOR_BGR2HLS)
@@ -25,7 +37,7 @@ def maskWhiteBG(img):
     h_max = 200
     s_min = 0
     s_max = 200
-    l_min = 140
+    l_min = 90
     l_max = 255
     
     # Define the HSL range for the white background (tune using trackbars)
@@ -59,10 +71,19 @@ if __name__ == "__main__":
         img = cv.blur(img, (6, 6))
         
         # Create a copy of the image
-        img_hsl = img.copy()
+        img_hsl_pre = img.copy()
         
         # Convert the image to HSL color space
-        img_hsl = cv.cvtColor(img_hsl, cv.COLOR_BGR2HLS)
+        img_hsl = cv.cvtColor(img_hsl_pre, cv.COLOR_BGR2HLS)
+
+        # Split the HSL channels
+        h, l, s = cv.split(img_hsl)
+
+        # Normalize the Lightness channel (L)
+        l_normalized = cv.normalize(l, None, 0, 255, cv.NORM_MINMAX)
+
+        # Merge the H, normalized L, and S channels back
+        img_hsl = cv.merge([h, l_normalized, s])
 
         # Create a window
         cv.namedWindow("White Background Masking (HSL)")

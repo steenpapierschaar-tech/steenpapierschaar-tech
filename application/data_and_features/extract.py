@@ -49,11 +49,12 @@ def getFeatures(contour):
     # Get convex hull length
     ConvexHullLength = cv.arcLength(ConvexHull, True)
     
-    # initialize ConvexityDefects with a default value
-    ConvexityDefects = 0.0
-    
     # get the top 2 convexity defects
     defects = getConvexityDefects(contour)
+    
+    if defects is None or defects.size == 0:
+        print("No convexity defects found!")
+        ConvexityDefects = 0.0
     
     if defects is not None and defects.size > 0:
         # Select only the 2 largest defects
@@ -189,19 +190,23 @@ if __name__ == "__main__":
         # Get the convexity defects of the contour
         features, defects = getContourFeatures(contour)
         
+        # Draw the convexity defects on the image
+        img_convexityDefects = img.copy()
+        print(defects)
         if defects is not None:
-            img_convexityDefects = img.copy()
-            img_convexityDefects = cv.drawContours(img_convexityDefects, [contour], -1, (0, 255, 0), 2)
             for i in range(defects.shape[0]):
-                s, e, f, _ = defects[i]  # Unpack the start, end, and farthest point indices, and ignore the depth
-                start = tuple(contour[s].ravel())  # Flatten the array to get x, y coordinates
-                end = tuple(contour[e].ravel())    # Same for the end point
-                far = tuple(contour[f].ravel())    # Same for the farthest point
-                cv.circle(img_convexityDefects, far, 5, (0, 0, 255), -1)
-                cv.line(img_convexityDefects, start, end, (0, 0, 255), 2)
+                if len(defects[i]) == 4:
+                    s, e, f, d = defects[i]
+                    start = tuple(contour[s][0])
+                    end = tuple(contour[e][0])
+                    far = tuple(contour[f][0])
+                    cv.line(img_convexityDefects, start, end, [0, 255, 0], 2)
+                    cv.circle(img_convexityDefects, far, 5, [0, 0, 255], -1)
+                else:
+                    print(f"Defect {i} does not have 4 elements. Skipping.")
 
-            img_convexityDefects_label = cv.putText(img_convexityDefects, "7. Convexity Defects", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
+        img_convexityDefects_label = cv.putText(img_convexityDefects, "7. Convexity Defects", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
         # Resize all images to the same dimensions
         height, width = img.shape[:2]
@@ -240,3 +245,4 @@ if __name__ == "__main__":
         
         # wait for a key press
         cv.waitKey(0)
+        cv.destroyAllWindows()
