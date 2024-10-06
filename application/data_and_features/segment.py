@@ -1,83 +1,116 @@
 import os
+import sys
 import glob
 import cv2 as cv
+import matplotlib.pyplot as plt
 import numpy as np
+from dataset_loader import load_files
 
-def maskBlueBG(img):
-    """ Asssuming the background is blue, segment the image and return a
-        BW image with foreground (white) and background (black)
-    """ 
-    # Change image color space
-    img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-    # Note that 0≤V≤1, 0≤S≤1, 0≤H≤360 and if H<0 then H←H+360
-    # 8-bit images: V←255V,S←255S,H←H/2(to fit to 0 to 255)
-    # see https://docs.opencv.org/4.5.3/de/d25/imgproc_color_conversions.html#color_convert_rgb_hsv
-
-    # Define background color range in HSV space
-    light_blue = (75,125,0)  # converted from HSV value obtained with colorpicker (150,50,0)
-    dark_blue  = (140,255,255)  # converted from HSV value obtained with colorpicker (250,100,100)
-
-    light_blue = (0,0,0)  # converted from HSV value obtained with colorpicker (150,50,0)
-    dark_blue  = (255,50,255)  # converted from HSV value obtained with colorpicker (250,100,100)
-
-    cv.imshow("img_hsv",img_hsv)
-    cv.waitKey(0)
-
-    # Mark pixels outside background color range
-    mask = ~cv.inRange(img_hsv, light_blue, dark_blue)
-    return mask
-
+def nothing(x):
+    pass
 
 def maskWhiteBG(img):
-    """ Asssuming the background is white, segment the image and return a
-        BW image with foreground (white) and background (black)
-    """ 
-    cv.imshow("img",img)
-    # Change image color space
-    img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-    cv.imshow("img_hsv",img_hsv)
 
-    img_hsv = img_hsv[:,:,0]
+    # Blur the image to suppress noise
+    img = cv.blur(img, (6, 6))
+    
+    # Create a copy of the image
+    img_hsl = img.copy()
+    
+    # Convert the image to HSL color space
+    img_hsl = cv.cvtColor(img_hsl, cv.COLOR_BGR2HLS)
+    
+    # Define the HSL range for the white background (tune using trackbars in main)
+    h_min = 85
+    h_max = 200
+    s_min = 0
+    s_max = 200
+    l_min = 140
+    l_max = 255
+    
+    # Define the HSL range for the white background (tune using trackbars)
+    lower_white = np.array([h_min, l_min, s_min])
+    upper_white = np.array([h_max, l_max, s_max])
 
-    cv.imshow("img_hsv2",img_hsv)
+    # Threshold the image to mask the white background
+    mask = cv.inRange(img_hsl, lower_white, upper_white)
+    
+    # Invert the mask to get the non-white areas
+    mask_inv = cv.bitwise_not(mask)
+    
+    # Apply the mask to the image
+    result = cv.bitwise_and(img, img, mask=mask_inv)
 
-    _, threshold = cv.threshold(img_hsv, 120,130 , cv.THRESH_BINARY_INV)
-    _, threshold2 = cv.threshold(img_hsv, 70,120 , cv.THRESH_BINARY_INV)
-
-    threshold3 = threshold2 + ~threshold
-
-    _, threshold3 = cv.threshold(threshold3, 150, 255, cv.THRESH_BINARY)
-
-    return threshold3
+    # return the treshold
+    return mask_inv
 
 if __name__ == "__main__":
-    """ Test segmentation functions"""
-    data_path = r'G:\My Drive\data\gesture_data\hang_loose'
-    data_path = r'G:\My Drive\data\gesture_data\thijs'
-
-    # grab the list of images in our data directory
-    print("[INFO] loading images...")
-    p = os.path.sep.join([data_path, '**', '*.png'])
-
-    file_list = [f for f in glob.iglob(p, recursive=True) if (os.path.isfile(f))]
-    print("[INFO] images found: {}".format(len(file_list)))
-
-    # loop over the image paths
-    for filename in file_list:
-        
-        # load image and blur a bit
-        img = cv.imread(filename)
-        img = cv.blur(img,(3,3))        
-
-        # mask background 
-        mask = maskBlueBG(img)
-        masked_img = cv.bitwise_and(img, img, mask=mask)
-
-        # show result and wait a bit        
-        cv.imshow("Masked image", masked_img)
-        k = cv.waitKey(1000) & 0xFF
-
-        # if the `q` key or ESC was pressed, break from the loop
-        if k == ord("q") or k == 27:
-            break 
     
+    # load all dataset image files
+    file_list = load_files()
+    
+    for filename in file_list:
+        print("[INFO] processing image: {}".format(filename))
+        
+        # load image
+        img = cv.imread(filename)
+        
+        # Blur the image to suppress noise
+        img = cv.blur(img, (6, 6))
+        
+        # Create a copy of the image
+        img_hsl = img.copy()
+        
+        # Convert the image to HSL color space
+        img_hsl = cv.cvtColor(img_hsl, cv.COLOR_BGR2HLS)
+
+        # Create a window
+        cv.namedWindow("White Background Masking (HSL)")
+
+        # Create trackbars for adjusting Hue, Saturation, and Lightness
+        cv.createTrackbar('Hue Min', 'White Background Masking (HSL)', 0, 255, nothing)
+        cv.createTrackbar('Hue Max', 'White Background Masking (HSL)', 255, 255, nothing)
+        cv.createTrackbar('Saturation Min', 'White Background Masking (HSL)', 0, 255, nothing)
+        cv.createTrackbar('Saturation Max', 'White Background Masking (HSL)', 255, 255, nothing)
+        cv.createTrackbar('Lightness Min', 'White Background Masking (HSL)', 200, 255, nothing)
+        cv.createTrackbar('Lightness Max', 'White Background Masking (HSL)', 255, 255, nothing)
+
+        while True:
+            # Get the current positions of the trackbars
+            h_min = cv.getTrackbarPos('Hue Min', 'White Background Masking (HSL)')
+            h_max = cv.getTrackbarPos('Hue Max', 'White Background Masking (HSL)')
+            s_min = cv.getTrackbarPos('Saturation Min', 'White Background Masking (HSL)')
+            s_max = cv.getTrackbarPos('Saturation Max', 'White Background Masking (HSL)')
+            l_min = cv.getTrackbarPos('Lightness Min', 'White Background Masking (HSL)')
+            l_max = cv.getTrackbarPos('Lightness Max', 'White Background Masking (HSL)')
+
+            # Define the HSL range for the white background (tune using trackbars)
+            lower_white = np.array([h_min, l_min, s_min])
+            upper_white = np.array([h_max, l_max, s_max])
+
+            # Threshold the image to mask the white background
+            mask = cv.inRange(img_hsl, lower_white, upper_white)
+            # Invert the mask to get the non-white areas
+            mask_inv = cv.bitwise_not(mask)
+            # Apply the mask to the image
+            result = cv.bitwise_and(img, img, mask=mask_inv)
+
+            # Ensure all images have the same number of channels
+            mask_bgr = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
+            mask_inv_bgr = cv.cvtColor(mask_inv, cv.COLOR_GRAY2BGR)
+
+            # Show the mask and the masked image combined
+            combined_result = cv.hconcat([img, mask_bgr, mask_inv_bgr, result])
+            cv.imshow('White Background Masking (HSL)', combined_result)
+            
+            # Press 'q' or 'ESC' to exit the loop
+            key = cv.waitKey(1) & 0xFF
+            if key == ord('q') or key == 27:
+                break
+
+
+        # Destroy the windows after exiting
+        cv.destroyAllWindows()
+        
+        # print the values
+        print("Hue Min: {}".format(h_min), "Hue Max: {}".format(h_max), "Saturation Min: {}".format(s_min), "Saturation Max: {}".format(s_max), "Lightness Min: {}".format(l_min), "Lightness Max: {}".format(l_max))
