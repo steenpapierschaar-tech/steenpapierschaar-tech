@@ -34,10 +34,10 @@ def maskWhiteBG(img):
     
     # Define the HSL range for the white background (tune using trackbars in main)
     h_min = 85
-    h_max = 200
+    h_max = 160
     s_min = 0
     s_max = 200
-    l_min = 90
+    l_min = 120
     l_max = 255
     
     # Define the HSL range for the white background (tune using trackbars)
@@ -89,11 +89,11 @@ if __name__ == "__main__":
         cv.namedWindow("White Background Masking (HSL)")
 
         # Create trackbars for adjusting Hue, Saturation, and Lightness
-        cv.createTrackbar('Hue Min', 'White Background Masking (HSL)', 0, 255, nothing)
-        cv.createTrackbar('Hue Max', 'White Background Masking (HSL)', 255, 255, nothing)
+        cv.createTrackbar('Hue Min', 'White Background Masking (HSL)', 85, 255, nothing)
+        cv.createTrackbar('Hue Max', 'White Background Masking (HSL)', 160, 255, nothing)
         cv.createTrackbar('Saturation Min', 'White Background Masking (HSL)', 0, 255, nothing)
-        cv.createTrackbar('Saturation Max', 'White Background Masking (HSL)', 255, 255, nothing)
-        cv.createTrackbar('Lightness Min', 'White Background Masking (HSL)', 200, 255, nothing)
+        cv.createTrackbar('Saturation Max', 'White Background Masking (HSL)', 200, 255, nothing)
+        cv.createTrackbar('Lightness Min', 'White Background Masking (HSL)', 120, 255, nothing)
         cv.createTrackbar('Lightness Max', 'White Background Masking (HSL)', 255, 255, nothing)
 
         while True:
@@ -112,7 +112,14 @@ if __name__ == "__main__":
             # Threshold the image to mask the white background
             mask = cv.inRange(img_hsl, lower_white, upper_white)
             # Invert the mask to get the non-white areas
-            mask_inv = cv.bitwise_not(mask)
+            
+            # apply morphology
+            kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (20,20))
+            morph = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
+
+            # invert the mask
+            mask_inv = cv.bitwise_not(morph)
+            
             # Apply the mask to the image
             result = cv.bitwise_and(img, img, mask=mask_inv)
 
