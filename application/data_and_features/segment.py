@@ -9,8 +9,28 @@ from dataset_loader import load_files
 def nothing(x):
     pass
 
-def maskWhiteBG(img):
+def test(image):
+    gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+ 
+    # Apply the Sobel operator in the X direction
+    sobel_x = cv.Sobel(gray_image, cv.CV_64F, 1, 0, ksize=3)
 
+    # Apply the Sobel operator in the Y direction
+    sobel_y = cv.Sobel(gray_image, cv.CV_64F, 0, 1, ksize=3)
+
+    # Combine the two gradients
+    sobel_combined = cv.magnitude(sobel_x, sobel_y)
+
+    # Normalize and convert the result to 8-bit image
+    sobel_combined = np.uint8(255 * sobel_combined / np.max(sobel_combined))
+    _, mask = cv.threshold(sobel_combined, 50, 255, cv.THRESH_BINARY)
+     
+    cv.imshow("mask",extracted_hand)
+
+    return mask
+
+def maskWhiteBG(img):
+ 
     # Blur the image to suppress noise
     img = cv.blur(img, (6, 6))
     
