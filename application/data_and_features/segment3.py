@@ -1,3 +1,7 @@
+# Segmentation using HSV, HSL, and YCbCr color spaces
+# Trackbars are used to adjust the threshold values for each color space
+# GrabCut is used to refine the segmentation
+
 import cv2 as cv
 import numpy as np
 import time
@@ -7,32 +11,37 @@ from dataset_loader import load_files
 def update_threshold(val):
     pass
 
+# Function to find the largest contour
+def find_largest_contour(contours):
+    largest_contour = max(contours, key=cv.contourArea)
+    return largest_contour
+
 # Setup windows and trackbars
 cv.namedWindow('HSV Thresholding')
 cv.namedWindow('HSL Thresholding')
 cv.namedWindow('YCbCr Thresholding')
 
 # Create trackbars for each threshold value (initial values set to 0)
-cv.createTrackbar('HSV H Min', 'HSV Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('HSV H Max', 'HSV Thresholding', 255, 255, update_threshold)
-cv.createTrackbar('HSV S Min', 'HSV Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('HSV S Max', 'HSV Thresholding', 255, 255, update_threshold)
-cv.createTrackbar('HSV V Min', 'HSV Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('HSV V Max', 'HSV Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('H Min', 'HSV Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('H Max', 'HSV Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('S Min', 'HSV Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('S Max', 'HSV Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('V Min', 'HSV Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('V Max', 'HSV Thresholding', 255, 255, update_threshold)
 
-cv.createTrackbar('HSL H Min', 'HSL Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('HSL H Max', 'HSL Thresholding', 255, 255, update_threshold)
-cv.createTrackbar('HSL L Min', 'HSL Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('HSL L Max', 'HSL Thresholding', 255, 255, update_threshold)
-cv.createTrackbar('HSL S Min', 'HSL Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('HSL S Max', 'HSL Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('H Min', 'HSL Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('H Max', 'HSL Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('L Min', 'HSL Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('L Max', 'HSL Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('S Min', 'HSL Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('S Max', 'HSL Thresholding', 255, 255, update_threshold)
 
-cv.createTrackbar('YCbCr Y Min', 'YCbCr Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('YCbCr Y Max', 'YCbCr Thresholding', 255, 255, update_threshold)
-cv.createTrackbar('YCbCr Cb Min', 'YCbCr Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('YCbCr Cb Max', 'YCbCr Thresholding', 255, 255, update_threshold)
-cv.createTrackbar('YCbCr Cr Min', 'YCbCr Thresholding', 0, 255, update_threshold)
-cv.createTrackbar('YCbCr Cr Max', 'YCbCr Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('Y Min', 'YCbCr Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('Y Max', 'YCbCr Thresholding', 252, 255, update_threshold)
+cv.createTrackbar('Cb Min', 'YCbCr Thresholding', 120, 255, update_threshold)
+cv.createTrackbar('Cb Max', 'YCbCr Thresholding', 255, 255, update_threshold)
+cv.createTrackbar('Cr Min', 'YCbCr Thresholding', 0, 255, update_threshold)
+cv.createTrackbar('Cr Max', 'YCbCr Thresholding', 255, 255, update_threshold)
 
 # Variable to store the last time GrabCut was executed
 last_grabcut_time = 0
@@ -47,6 +56,11 @@ for filename in file_list:
     # Load the image
     img = cv.imread(filename)
     img_original = img.copy()
+
+
+    ### Contrast normalization or histogram equalization
+    
+
 
     # Boost contrast of image
     alpha = 2.0  # Contrast control (1.0-3.0)
@@ -65,26 +79,26 @@ for filename in file_list:
     while True:
         
         # Get current positions of trackbars for threshold values
-        hsv_h_min = cv.getTrackbarPos('HSV H Min', 'HSV Thresholding')
-        hsv_h_max = cv.getTrackbarPos('HSV H Max', 'HSV Thresholding')
-        hsv_s_min = cv.getTrackbarPos('HSV S Min', 'HSV Thresholding')
-        hsv_s_max = cv.getTrackbarPos('HSV S Max', 'HSV Thresholding')
-        hsv_v_min = cv.getTrackbarPos('HSV V Min', 'HSV Thresholding')
-        hsv_v_max = cv.getTrackbarPos('HSV V Max', 'HSV Thresholding')
+        hsv_h_min = cv.getTrackbarPos('H Min', 'HSV Thresholding')
+        hsv_h_max = cv.getTrackbarPos('H Max', 'HSV Thresholding')
+        hsv_s_min = cv.getTrackbarPos('S Min', 'HSV Thresholding')
+        hsv_s_max = cv.getTrackbarPos('S Max', 'HSV Thresholding')
+        hsv_v_min = cv.getTrackbarPos('V Min', 'HSV Thresholding')
+        hsv_v_max = cv.getTrackbarPos('V Max', 'HSV Thresholding')
         
-        hsl_h_min = cv.getTrackbarPos('HSL H Min', 'HSL Thresholding')
-        hsl_h_max = cv.getTrackbarPos('HSL H Max', 'HSL Thresholding')
-        hsl_l_min = cv.getTrackbarPos('HSL L Min', 'HSL Thresholding')
-        hsl_l_max = cv.getTrackbarPos('HSL L Max', 'HSL Thresholding')
-        hsl_s_min = cv.getTrackbarPos('HSL S Min', 'HSL Thresholding')
-        hsl_s_max = cv.getTrackbarPos('HSL S Max', 'HSL Thresholding')
+        hsl_h_min = cv.getTrackbarPos('H Min', 'HSL Thresholding')
+        hsl_h_max = cv.getTrackbarPos('H Max', 'HSL Thresholding')
+        hsl_l_min = cv.getTrackbarPos('L Min', 'HSL Thresholding')
+        hsl_l_max = cv.getTrackbarPos('L Max', 'HSL Thresholding')
+        hsl_s_min = cv.getTrackbarPos('S Min', 'HSL Thresholding')
+        hsl_s_max = cv.getTrackbarPos('S Max', 'HSL Thresholding')
         
-        ycbcr_y_min = cv.getTrackbarPos('YCbCr Y Min', 'YCbCr Thresholding')
-        ycbcr_y_max = cv.getTrackbarPos('YCbCr Y Max', 'YCbCr Thresholding')
-        ycbcr_cb_min = cv.getTrackbarPos('YCbCr Cb Min', 'YCbCr Thresholding')
-        ycbcr_cb_max = cv.getTrackbarPos('YCbCr Cb Max', 'YCbCr Thresholding')
-        ycbcr_cr_min = cv.getTrackbarPos('YCbCr Cr Min', 'YCbCr Thresholding')
-        ycbcr_cr_max = cv.getTrackbarPos('YCbCr Cr Max', 'YCbCr Thresholding')
+        ycbcr_y_min = cv.getTrackbarPos('Y Min', 'YCbCr Thresholding')
+        ycbcr_y_max = cv.getTrackbarPos('Y Max', 'YCbCr Thresholding')
+        ycbcr_cb_min = cv.getTrackbarPos('Cb Min', 'YCbCr Thresholding')
+        ycbcr_cb_max = cv.getTrackbarPos('Cb Max', 'YCbCr Thresholding')
+        ycbcr_cr_min = cv.getTrackbarPos('Cr Min', 'YCbCr Thresholding')
+        ycbcr_cr_max = cv.getTrackbarPos('Cr Max', 'YCbCr Thresholding')
 
         # Apply custom thresholding using inRange for HSV
         hsv_lower = np.array([hsv_h_min, hsv_s_min, hsv_v_min], dtype=np.uint8)
@@ -107,14 +121,14 @@ for filename in file_list:
         combined_mask_ycbcr = ycbcr_mask
 
         # Invert the combined masks
-        binary_inv_hsv = cv.bitwise_not(combined_mask_hsv)
-        binary_inv_hsl = cv.bitwise_not(combined_mask_hsl)
-        binary_inv_ycbcr = cv.bitwise_not(combined_mask_ycbcr)
+        #binary_inv_hsv = cv.bitwise_not(combined_mask_hsv)
+        #binary_inv_hsl = cv.bitwise_not(combined_mask_hsl)
+        #binary_inv_ycbcr = cv.bitwise_not(combined_mask_ycbcr)
 
         # Create masks for GrabCut based on inverted thresholds
-        mask_hsv = np.where(binary_inv_hsv > 0, 1, 0).astype('uint8')
-        mask_hsl = np.where(binary_inv_hsl > 0, 1, 0).astype('uint8')
-        mask_ycbcr = np.where(binary_inv_ycbcr > 0, 1, 0).astype('uint8')
+        mask_hsv = np.where(combined_mask_hsv > 0, 1, 0).astype('uint8')
+        mask_hsl = np.where(combined_mask_hsl > 0, 1, 0).astype('uint8')
+        mask_ycbcr = np.where(combined_mask_ycbcr > 0, 1, 0).astype('uint8')
 
         # Mark sure background as 0 and sure foreground as 1 to help GrabCut
         mask_hsv[0:5, :] = cv.GC_BGD  # sure background (top 5 rows)
@@ -155,10 +169,10 @@ for filename in file_list:
         hand_segmented_ycbcr = img_original * mask2_ycbcr[:, :, np.newaxis]
 
         # Apply morphological operations to clean up the mask
-        kernel = np.ones((9, 9), np.uint8)
-        mask2_hsv = cv.morphologyEx(mask2_hsv, cv.MORPH_CLOSE, kernel)
-        mask2_hsl = cv.morphologyEx(mask2_hsl, cv.MORPH_CLOSE, kernel)
-        mask2_ycbcr = cv.morphologyEx(mask2_ycbcr, cv.MORPH_CLOSE, kernel)
+        kernel = np.ones((3, 3), np.uint8)
+        #mask2_hsv = cv.morphologyEx(mask2_hsv, cv.MORPH_CLOSE, kernel)
+        #mask2_hsl = cv.morphologyEx(mask2_hsl, cv.MORPH_CLOSE, kernel)
+        #mask2_ycbcr = cv.morphologyEx(mask2_ycbcr, cv.MORPH_CLOSE, kernel)
         
         # Mask the image again with the refined mask
         hand_segmented_hsv_refined = img_original * mask2_hsv[:, :, np.newaxis]
@@ -170,15 +184,20 @@ for filename in file_list:
         contours_hsl, _ = cv.findContours(mask2_hsl, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         contours_ycbcr, _ = cv.findContours(mask2_ycbcr, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         
+        # Select only the largest contour
+        largest_contour_hsv = find_largest_contour(contours_hsv)
+        largest_contour_hsl = find_largest_contour(contours_hsl)
+        largest_contour_ycbcr = find_largest_contour(contours_ycbcr)
+        
         # Create a copy of the image to draw the contours
         img_contours_hsv = img_original.copy()
         img_contours_hsl = img_original.copy()
         img_contours_ycbcr = img_original.copy()
         
         # Draw the contours
-        cv.drawContours(img_contours_hsv, contours_hsv, -1, (0, 255, 0), 2)
-        cv.drawContours(img_contours_hsl, contours_hsl, -1, (0, 255, 0), 2)
-        cv.drawContours(img_contours_ycbcr, contours_ycbcr, -1, (0, 255, 0), 2)
+        cv.drawContours(img_contours_hsv, [largest_contour_hsv], -1, (0, 255, 0), 2)
+        cv.drawContours(img_contours_hsl, [largest_contour_hsl], -1, (0, 255, 0), 2)
+        cv.drawContours(img_contours_ycbcr, [largest_contour_ycbcr], -1, (0, 255, 0), 2)
         
         # Display the original and segmented image
         hsv_display = cv.hconcat([img, img_contours_hsv])
