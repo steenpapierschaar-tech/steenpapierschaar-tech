@@ -21,12 +21,7 @@ for filename in file_list:
     # Load the image
     img = cv.imread(filename)
     img_original = img.copy()
-    
-    # Boost the contrast of the image
-    alpha = 2.0  # Contrast control (1.0-3.0)
-    beta = 0  # Brightness control (0-100)
-    img = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
-    
+      
     # Show image with boosted contrast
     cv.namedWindow('Boosted Contrast')
     cv.imshow('Boosted Contrast', img)
@@ -37,11 +32,23 @@ for filename in file_list:
     # Create Otsu's thresholded image
     gray = cv.cvtColor(img.copy(), cv.COLOR_BGR2GRAY)
     
+    scale = 5
+    delta = 1.5
+    ddepth = cv.CV_16S
+    grad_x = cv.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, borderType=cv.BORDER_DEFAULT)
+    grad_y = cv.Sobel(gray, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, borderType=cv.BORDER_DEFAULT)
+    abs_grad_x = cv.convertScaleAbs(grad_x)
+    abs_grad_y = cv.convertScaleAbs(grad_y)
+    gray = cv.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+    
     # Apply thresholding to segment the background (white/gray)
     ret, threshold_otsu = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     threshold_A = cv.adaptiveThreshold(gray,255,cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY,11,2)
     threshold_A_Mean = cv.adaptiveThreshold(gray,255,cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY,11,2)
     threshold_A_Gaussian = cv.adaptiveThreshold(gray,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY,11,2)
+
+    cv.namedWindow('Gradient')
+    cv.imshow('Gradient', gray)
 
     # Invert threshold
     threshold_otsu = cv.bitwise_not(threshold_otsu)
@@ -50,23 +57,23 @@ for filename in file_list:
     threshold_A_Gaussian = cv.bitwise_not(threshold_A_Gaussian)
     
     # Apply morphological operations to clean up the thresholded image
-    kernel = np.ones((5,5), np.uint8)
-    threshold_otsu = cv.morphologyEx(threshold_otsu, cv.MORPH_ELLIPSE, kernel)
-    threshold_A = cv.morphologyEx(threshold_A, cv.MORPH_ELLIPSE, kernel)
-    threshold_A_Mean = cv.morphologyEx(threshold_A_Mean, cv.MORPH_ELLIPSE, kernel)
-    threshold_A_Gaussian = cv.morphologyEx(threshold_A_Gaussian, cv.MORPH_ELLIPSE, kernel)
+    kernel = np.ones((3,3), np.uint8)
+    #threshold_otsu = cv.morphologyEx(threshold_otsu, cv.MORPH_OPEN, kernel)
+    #threshold_A = cv.morphologyEx(threshold_A, cv.MORPH_OPEN, kernel)
+    #threshold_A_Mean = cv.morphologyEx(threshold_A_Mean, cv.MORPH_OPEN, kernel)
+    #threshold_A_Gaussian = cv.morphologyEx(threshold_A_Gaussian, cv.MORPH_OPEN, kernel)
     
     # Apply Dilation to the thresholded image
-    #threshold_otsu = cv.dilate(threshold_otsu, kernel, iterations=3)
-    #threshold_A = cv.dilate(threshold_A, kernel, iterations=3)
-    #threshold_A_Mean = cv.dilate(threshold_A_Mean, kernel, iterations=2)
-    #threshold_A_Gaussian = cv.dilate(threshold_A_Gaussian, kernel, iterations=2)
+    threshold_otsu = cv.dilate(threshold_otsu, kernel, iterations=1)
+    threshold_A = cv.dilate(threshold_A, kernel, iterations=1)
+    threshold_A_Mean = cv.dilate(threshold_A_Mean, kernel, iterations=1)
+    threshold_A_Gaussian = cv.dilate(threshold_A_Gaussian, kernel, iterations=1)
     
     # Apply Erosion to the thresholded image
-    #threshold_otsu = cv.erode(threshold_otsu, kernel, iterations=2)
-    #threshold_A = cv.erode(threshold_A, kernel, iterations=2)
-    #threshold_A_Mean = cv.erode(threshold_A_Mean, kernel, iterations=2)
-    #threshold_A_Gaussian = cv.erode(threshold_A_Gaussian, kernel, iterations=2)
+    threshold_otsu = cv.erode(threshold_otsu, kernel, iterations=1)
+    threshold_A = cv.erode(threshold_A, kernel, iterations=1)
+    threshold_A_Mean = cv.erode(threshold_A_Mean, kernel, iterations=1)
+    threshold_A_Gaussian = cv.erode(threshold_A_Gaussian, kernel, iterations=1)
 
     # Find the largest contour in the thresholded image
     contour_otsu, _ = cv.findContours(threshold_otsu, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
