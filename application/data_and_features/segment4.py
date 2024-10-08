@@ -51,22 +51,22 @@ for filename in file_list:
     
     # Apply morphological operations to clean up the thresholded image
     kernel = np.ones((5,5), np.uint8)
-    threshold_otsu = cv.morphologyEx(threshold_otsu, cv.MORPH_CLOSE, kernel)
-    threshold_A = cv.morphologyEx(threshold_A, cv.MORPH_CLOSE, kernel)
-    threshold_A_Mean = cv.morphologyEx(threshold_A_Mean, cv.MORPH_CLOSE, kernel)
-    threshold_A_Gaussian = cv.morphologyEx(threshold_A_Gaussian, cv.MORPH_CLOSE, kernel)
+    threshold_otsu = cv.morphologyEx(threshold_otsu, cv.MORPH_ELLIPSE, kernel)
+    threshold_A = cv.morphologyEx(threshold_A, cv.MORPH_ELLIPSE, kernel)
+    threshold_A_Mean = cv.morphologyEx(threshold_A_Mean, cv.MORPH_ELLIPSE, kernel)
+    threshold_A_Gaussian = cv.morphologyEx(threshold_A_Gaussian, cv.MORPH_ELLIPSE, kernel)
     
     # Apply Dilation to the thresholded image
-    threshold_otsu = cv.dilate(threshold_otsu, kernel, iterations=3)
-    threshold_A = cv.dilate(threshold_A, kernel, iterations=3)
-    threshold_A_Mean = cv.dilate(threshold_A_Mean, kernel, iterations=2)
-    threshold_A_Gaussian = cv.dilate(threshold_A_Gaussian, kernel, iterations=2)
+    #threshold_otsu = cv.dilate(threshold_otsu, kernel, iterations=3)
+    #threshold_A = cv.dilate(threshold_A, kernel, iterations=3)
+    #threshold_A_Mean = cv.dilate(threshold_A_Mean, kernel, iterations=2)
+    #threshold_A_Gaussian = cv.dilate(threshold_A_Gaussian, kernel, iterations=2)
     
     # Apply Erosion to the thresholded image
-    threshold_otsu = cv.erode(threshold_otsu, kernel, iterations=2)
-    threshold_A = cv.erode(threshold_A, kernel, iterations=2)
-    threshold_A_Mean = cv.erode(threshold_A_Mean, kernel, iterations=2)
-    threshold_A_Gaussian = cv.erode(threshold_A_Gaussian, kernel, iterations=2)
+    #threshold_otsu = cv.erode(threshold_otsu, kernel, iterations=2)
+    #threshold_A = cv.erode(threshold_A, kernel, iterations=2)
+    #threshold_A_Mean = cv.erode(threshold_A_Mean, kernel, iterations=2)
+    #threshold_A_Gaussian = cv.erode(threshold_A_Gaussian, kernel, iterations=2)
 
     # Find the largest contour in the thresholded image
     contour_otsu, _ = cv.findContours(threshold_otsu, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
