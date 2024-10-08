@@ -48,6 +48,11 @@ for filename in file_list:
     img = cv.imread(filename)
     img_original = img.copy()
 
+    # Boost contrast of image
+    alpha = 2.0  # Contrast control (1.0-3.0)
+    beta = 0  # Brightness control (0-100)
+    img = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
+
     # Blur the image to suppress noise
     img_blur = cv.blur(img, (6, 6))
 
@@ -176,15 +181,15 @@ for filename in file_list:
         cv.drawContours(img_contours_ycbcr, contours_ycbcr, -1, (0, 255, 0), 2)
         
         # Display the original and segmented image
-        hsv_display = cv.hconcat([img_original, img_contours_hsv])
+        hsv_display = cv.hconcat([img, img_contours_hsv])
         hsv_segmented_display = cv.hconcat([hand_segmented_hsv, hand_segmented_hsv_refined])
         cv.imshow('HSV Thresholding', cv.vconcat([hsv_display, hsv_segmented_display]))
 
-        hsl_display = cv.hconcat([img_original, img_contours_hsl])
+        hsl_display = cv.hconcat([img, img_contours_hsl])
         hsl_segmented_display = cv.hconcat([hand_segmented_hsl, hand_segmented_hsl_refined])
         cv.imshow('HSL Thresholding', cv.vconcat([hsl_display, hsl_segmented_display]))
 
-        ycbcr_display = cv.hconcat([img_original, img_contours_ycbcr])
+        ycbcr_display = cv.hconcat([img, img_contours_ycbcr])
         ycbcr_segmented_display = cv.hconcat([hand_segmented_ycbcr, hand_segmented_ycbcr_refined])
         cv.imshow('YCbCr Thresholding', cv.vconcat([ycbcr_display, ycbcr_segmented_display]))
 
