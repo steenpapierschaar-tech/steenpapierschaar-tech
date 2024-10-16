@@ -5,6 +5,7 @@ import numpy as np
 from segment import maskWhiteBG
 from extract import getLargestContour, getFeatures
 from sklearn.utils import Bunch
+from pipeline import prepimg
 
 def fetch_data(data_path):
     # grab the list of images in our data directory
@@ -24,30 +25,30 @@ def fetch_data(data_path):
     for filename in file_list: #[::10]:
         # load image and blur a bit to suppress noise
         img = cv.imread(filename)
-
+        img_foreground = prepimg(img)
         # Apply GaussianBlur to reduce noise
-        img_BW = cv.GaussianBlur(img, (21, 21), 0)
+        #img_BW = cv.GaussianBlur(img, (21, 21), 0)
 
         # Threshold the image to create a binary image
         #ret, img_BW = cv.threshold(blurred, 80,100 , cv.THRESH_BINARY_INV)
 
-        img_BW = maskWhiteBG(img)
+        #img_BW = maskWhiteBG(img)
 
         # perform a series of erosions and dilations to remove any small regions of noise
         #kernel = cv.getStructuringElement(cv.MORPH_ERODE,ksize=(3,3))
-        img_BW = cv.dilate(img_BW, None, iterations=2)
-        img_BW = cv.erode(img_BW, None, iterations=2)        
+        #img_BW = cv.dilate(img_BW, None, iterations=2)
+        #img_BW = cv.erode(img_BW, None, iterations=2)        
 
         # check if foreground is actually there
-        if cv.countNonZero(img_BW) == 0:
-            continue
+        # if cv.countNonZero(img_foreground) == 0:
+        #     continue
         
         #cv.imshow("Segmented image", img_BW)
 
         #cv.waitKey(0)
 
         # find largest contour
-        contour = getLargestContour(img_BW)
+        contour = getLargestContour(img_foreground)
 
         # extract features from contour
         #features = getSimpleContourFeatures(contour)
@@ -63,10 +64,10 @@ def fetch_data(data_path):
 
         # draw outline, show image, and wait a bit
         cv.drawContours(img, [contour], -1, (0, 255, 0), 2)        
-        #cv.imshow("image", img)
+        cv.imshow("image", img)
         #k = cv.waitKey(1) & 0xFF
 
-        #cv.waitKey(0)
+        cv.waitKey(0)
         # if the `q` key or ESC was pressed, break from the loop
         #if k == ord("q") or k == 27:
         #    break
