@@ -8,9 +8,9 @@ from dataset_loader import load_files
 # https://docs.opencv.org/4.x/d1/dc5/tutorial_background_subtraction.html
 
 normalization_method = 1
-smoothing_method = 1
-threshold_method = 1
-morph_method = 1
+smoothing_method = 2
+threshold_method = 4
+morph_method = 4
 edge_detection_method = 1
 background_removal_method = 1
 
@@ -92,9 +92,6 @@ def normalize_image(image):
     
     # Get the trackbar position for returning the image
     selection = cv.getTrackbarPos('Method', '1 Normalization')
-    
-    # print the selection
-    print("Selection: ", selection)
     match selection:
         case 1:
             normalized_image = image
@@ -120,7 +117,7 @@ def smooth_image(image):
     cv.createTrackbar('Method', '2 Smoothing', smoothing_method, 3, update_smoothing_method)
     
     bilateral = cv.bilateralFilter(image, 9, 75, 75)
-    gaussian = cv.GaussianBlur(image, (5, 5), 0)
+    gaussian = cv.GaussianBlur(image, (9, 9), 0)
     
     # Label the images
     image_label = image.copy()
@@ -159,8 +156,8 @@ def threshold_image(image):
     cv.createTrackbar('Method', '3 Thresholding', threshold_method, 5, update_threshold_method)
     
     binary_threshold = cv.threshold(image, 127, 255, cv.THRESH_BINARY)
-    adaptive_mean_threshold = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, 2)
-    adaptive_gaussian_threshold = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+    adaptive_mean_threshold = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 7, 2)
+    adaptive_gaussian_threshold = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 2)
     otsu_threshold, otsu = cv.threshold(image, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     
     # Label the images
@@ -204,7 +201,7 @@ def morphological_operations(image):
     cv.namedWindow('4 Morphological Operations')
     
     # Create trackbars for choosing the morphological operation
-    cv.createTrackbar('Method', '4 Morphological Operations', morph_method, 5, update_morphological_method)
+    cv.createTrackbar('Method', '4 Morphological Operations', morph_method, 6, update_morphological_method)
     
     kernel = np.ones((5, 5), np.uint8)
     
@@ -213,21 +210,27 @@ def morphological_operations(image):
     opening = cv.morphologyEx(image, cv.MORPH_OPEN, kernel)
     closing = cv.morphologyEx(image, cv.MORPH_CLOSE, kernel)
     
+    # Erode and then dilate
+    custom_morph = cv.erode(image, kernel, iterations=2)
+    custom_morph = cv.dilate(custom_morph, kernel, iterations=2)
+    
     # Label the images
     image_label = image.copy()
     erosion_label = erosion.copy()
     dilation_label = dilation.copy()
     opening_label = opening.copy()
     closing_label = closing.copy()
+    custom_morph_label = custom_morph.copy()
     
     cv.putText(image_label, '1 Original', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv.LINE_AA)
     cv.putText(erosion_label, '2 Erosion', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv.LINE_AA)
     cv.putText(dilation_label, '3 Dilation', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv.LINE_AA)
     cv.putText(opening_label, '4 Opening', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv.LINE_AA)
     cv.putText(closing_label, '5 Closing', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv.LINE_AA)
+    cv.putText(custom_morph_label, '6 Custom Morph', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv.LINE_AA)
 
     # Show the images together
-    row_A = cv.vconcat([image_label, erosion_label, dilation_label, opening_label, closing_label])
+    row_A = cv.vconcat([image_label, erosion_label, dilation_label, opening_label, closing_label, custom_morph_label])
     cv.imshow('4 Morphological Operations', row_A)
     
     # Get the trackbar position for returning the image
@@ -241,6 +244,8 @@ def morphological_operations(image):
             morphed = opening
         case 5:
             morphed = closing
+        case 6:
+            morphed = custom_morph
         case _:
             morphed = image
             
@@ -291,22 +296,36 @@ def edge_detection(image):
 
     return edges
 
-def background_removal(image):
+def background_removal(original_image, image):
     # Remove the background from the image
     
-    # Draw largest contour
+    # Find the second largest contour in the image
     contours, _ = cv.findContours(image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     largest_contour = max(contours, key=cv.contourArea)
-    mask = np.zeros(image.shape, np.uint8)
-    cv.drawContours(mask, [largest_contour], -1, (255, 255, 255), -1)
     
-    # Show the mask
-    cv.imshow('6 Background Removal', mask)
+    # Create a mask for the largest contour
+    mask = np.zeros_like(image)
+    cv.drawContours(mask, [largest_contour], -1, 255, -1)
     
-    # Show the contour
+    # Invert the mask
+    mask = cv.bitwise_not(mask)
     
+    # Apply the mask to the original image
+    background_removed = cv.bitwise_and(original_image, original_image, mask=mask)
     
-    background_removed = image
+    # Draw the largest contour on the original image
+    cv.drawContours(original_image, [largest_contour], -1, (0, 255, 0), 2)
+    
+    # Display the original and segmented image
+    original_display = original_image.copy()
+    segmented_display = background_removed.copy()
+    
+    cv.putText(original_display, 'Original', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+    cv.putText(segmented_display, 'Segmented', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+    
+    # Show the images together
+    row_A = cv.vconcat([original_display, segmented_display])
+    cv.imshow('6 Background Removal', row_A)
     
     return background_removed
 
@@ -325,7 +344,7 @@ def segmentate(image):
     
     edges = edge_detection(morphed)
         
-    background_removed = background_removal(edges)
+    background_removed = background_removal(image, edges)
     
     return background_removed
 
@@ -333,6 +352,10 @@ if __name__ == "__main__":
 
     # Building the file list
     file_list = load_files()
+    
+    # sort files by filename
+    file_list.sort()
+    
     
     for filename in file_list:
         # Print the filename
