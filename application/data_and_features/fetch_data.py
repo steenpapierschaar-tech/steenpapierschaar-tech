@@ -47,12 +47,12 @@ def fetch_data(data_path):
         # draw outline, show image, and wait a bit
         cv.drawContours(img, [contour], -1, (0, 255, 0), 2)        
         cv.imshow("image", img)
-        #k = cv.waitKey(1) & 0xFF
+        k = cv.waitKey(0) & 0xFF
 
-        cv.waitKey(1)
+        #cv.waitKey(1)
         # if the `q` key or ESC was pressed, break from the loop
-        #if k == ord("q") or k == 27:
-        #    break
+        if k == ord("q") or k == 27:
+            break
 
     unique_targets = np.unique(target)
     print("[INFO] targets found: {}".format(unique_targets))
