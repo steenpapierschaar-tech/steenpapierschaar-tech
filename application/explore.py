@@ -18,11 +18,11 @@ if __name__ == "__main__":
         os.makedirs(output_subdir, exist_ok=True)
 
     #Features
-    area = 0
-    contour = 1
-    convexHullLength = 2
-    convexityDefects = 3
-    compactness = 4
+    #area = 0
+    #contour = 1
+    #convexHullLength = 2
+    #convexityDefects = 3
+    #compactness = 4
 
     # get the data path
     fileList = loadFiles()
