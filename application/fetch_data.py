@@ -10,14 +10,12 @@ def initDataMatrix():
     """
     Initialize an empty data matrix with space for both primary and extra features
     """
-    featureNames = ['area', 'contourLength', 'ConvexHullLength', 'ConvexityDefects', 'compactness']
-    featureExtraNames = ['area', 'perimeter', 'aspect_ratio', 'extent']
-
-    # Create an empty data matrix with correct number of feature columns
-    total_features = len(featureNames) + len(featureExtraNames)
-    data = np.empty((0, total_features), float)  # Empty array with feature length
+    featureNames = ['area', 'contourLength', 'ConvexHullLength', 'ConvexityDefects', 'compactness', 'circularity', 'aspectRatio', 'extent'] + [f'HuMoment{i+1}' for i in range(7)]
     
-    return data, featureNames, featureExtraNames
+    # Create an empty data matrix with correct number of feature columns
+    data = np.empty((0, len(featureNames)), float)  # Empty array with feature length
+    
+    return data, featureNames
 
 def analyzeImage(image):
     """
@@ -32,17 +30,24 @@ def analyzeImage(image):
     # Get features from contour
     features = getFeatures(contour)
     
-    # Get simple features as extra
-    featuresExtra = getSimpleContourFeatures(contour)
+    # Compute moments and Hu Moments
+    moments = cv.moments(contour)  # Compute spatial moments
+    huMoments = cv.HuMoments(moments).flatten()  # Compute Hu moments and flatten the array
     
-    return features, featuresExtra
+    # Normalize Hu moments for numerical stability
+    huMoments = -np.sign(huMoments) * np.log10(np.abs(huMoments) + 1e-12)  # Log transformation for numerical stability
+    
+    # Combine all features
+    combinedFeatures = np.hstack((features, huMoments))
+    
+    return combinedFeatures
 
-def appendToDataset(dataset, features, featuresExtra, label):
+def appendToDataset(dataset, features, label):
     """
     Append the extracted features and label to the dataset
     """
     # Combine primary and extra features
-    combinedFeatures = np.hstack((features, featuresExtra))
+    combinedFeatures = np.hstack(features)
 
     # Append features to the dataset's data matrix
     dataset['data'] = np.vstack([dataset['data'], combinedFeatures])
@@ -57,13 +62,13 @@ def datasetBuilder(file_list):
     Build the dataset from the list of image files
     """
     # Initialize the data matrix and feature names
-    dataMatrix, featureNames, featureExtraNames = initDataMatrix()
+    dataMatrix, featureNames = initDataMatrix()
     
     # Create the dataset structure
     dataset = {
         'data': dataMatrix,
         'target': [],
-        'feature_names': featureNames + featureExtraNames
+        'feature_names': featureNames
     }
 
     # Process each image in the file list
@@ -74,13 +79,13 @@ def datasetBuilder(file_list):
         image = cv.imread(filename)
 
         # Analyze the image to extract features
-        features, featuresExtra = analyzeImage(image)
+        features = analyzeImage(image)
         
         # Extract the label from the directory (if needed)
         label = filename.split(os.path.sep)[-2]
         
         # Append the features and label to the dataset
-        dataset = appendToDataset(dataset, features, featuresExtra, label)
+        dataset = appendToDataset(dataset, features, label)
 
     # Get unique target labels
     unique_targets = np.unique(dataset['target'])

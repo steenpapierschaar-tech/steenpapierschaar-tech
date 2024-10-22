@@ -36,6 +36,9 @@ def getFeatures(contour):
     """ Return some simple contour features
         See https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_properties/py_contour_properties.html
     """ 
+    
+    # get bounding box
+    x,y,w,h = cv.boundingRect(contour)
 
     # basic contour features
     area = cv.contourArea(contour)
@@ -63,9 +66,19 @@ def getFeatures(contour):
         ConvexityDefects = np.mean(ConvexityDefects)
     
     compactness = contourLength/area
+    
+    moments = cv.moments(contour)
+    huMoment = cv.HuMoments(moments)
+    huMoment = -1.0 * np.sign(huMoment) * np.log10(abs(huMoment))
+    
+    circularity = (4*np.pi*area)/(contourLength**2)
+    
+    aspectRatio = float(w)/h
+    
+    extent = float(area)/(w*h)
 
     # compile a feature vector
-    features = np.array([area, contourLength, ConvexHullLength, ConvexityDefects,compactness])
+    features = np.array([area, contourLength, ConvexHullLength, ConvexityDefects, compactness, circularity, aspectRatio, extent])
 
     return (features)
 
