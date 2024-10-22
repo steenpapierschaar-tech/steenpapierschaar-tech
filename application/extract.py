@@ -7,11 +7,12 @@ from datasetLoader import loadFiles
 
 def getLargestContour(img_BW):
     """ Return largest contour in foreground as an nd.array """
-    contours, hier = cv.findContours(img_BW.copy(), cv.RETR_EXTERNAL,
-                                     cv.CHAIN_APPROX_SIMPLE)
-    contour = max(contours, key=cv.contourArea)
+    contours, hier = cv.findContours(img_BW.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     
-    return np.squeeze(contour)
+    if contours:
+        return np.squeeze(max(contours, key=cv.contourArea))
+    else:
+        return None  # Return None if no contours are found
 
 def getContourExtremes(contour):
     """ Return contour extremes as an tuple of 4 tuples """
@@ -37,6 +38,10 @@ def getFeatures(contour):
         See https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_properties/py_contour_properties.html
     """ 
     
+    if contour is None or len(contour) == 0:
+        # Return a zero vector of appropriate length when no contour is found
+        return np.zeros(8)
+    
     # get bounding box
     x,y,w,h = cv.boundingRect(contour)
 
@@ -60,11 +65,18 @@ def getFeatures(contour):
         ConvexityDefects = 0.0
     
     if defects is not None and defects.size > 0:
-        # Select only the 2 largest defects
-        ConvexityDefects = np.flip(np.sort(defects))[:2]
-        # Get average of top 2 defects
-        ConvexityDefects = np.mean(ConvexityDefects)
+        defects = defects.squeeze()
     
+        convexityDefectsDepths = [defect[3] for defect in defects]
+        
+        # Sort depths in descending order and get the top 3
+        largest_depths = sorted(convexityDefectsDepths, reverse=True)[:3]
+
+        # Compute the average of the top 3 depths
+        ConvexityDefects = np.mean(largest_depths)
+        #print("Largest_depths", largest_depths)
+        #print("Convexity defects: ", ConvexityDefects)
+
     compactness = contourLength/area
     
     moments = cv.moments(contour)

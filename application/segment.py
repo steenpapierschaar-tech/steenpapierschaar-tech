@@ -7,11 +7,13 @@ import numpy as np
 from datasetLoader import loadFiles
 import argparse
 
-def testGrabCut(image):
+def prepareImage(image):
 
+    original = image.copy()
+    
     image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-    image[:, :, 0] = 0
-    image[:, :, 1] = 0
+    image[:, :, 0] = 0  # Set the blue channel to 0
+    image[:, :, 1] = 0  # Set the green channel to 0
 
     # Define an initial mask for GrabCut algorithm
     mask = np.zeros(image.shape[:2], np.uint8)
@@ -31,14 +33,29 @@ def testGrabCut(image):
 
     # Apply the mask to the image
     image_no_bg = image * mask2[:, :, np.newaxis]
-
+    
     image_no_bg = cv.cvtColor(image_no_bg, cv.COLOR_BGR2GRAY)
 
-    # cv.imshow("result",image_no_bg)
+    # Threshold the image to get a binary mask
+    _, mask = cv.threshold(image_no_bg, 1, 255, cv.THRESH_BINARY)
+    
+    # Apply morphological opening to remove small black spots inside the object
+    kernel = np.ones((5, 5), np.uint8)
 
-    return image_no_bg
+    # open
+    opened_mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=2)
 
-def prepareImage(image):
+    # dilate
+    #dilated_mask = cv.dilate(mask, kernel, iterations=1)
+    # erode
+    #opened_mask = cv.erode(dilated_mask, kernel, iterations=1)
+    
+    # Show the mask
+    cv.imshow("Mask", opened_mask)
+    
+    return opened_mask
+
+def prepareImage2(image):
 
     image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
     image[:, :, 0] = 0
