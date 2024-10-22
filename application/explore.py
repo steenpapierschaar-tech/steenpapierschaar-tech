@@ -49,23 +49,22 @@ if __name__ == "__main__":
     ax.set_title('Target Distribution in ' + output_subdir)
     plt.tight_layout()
     plt.savefig(os.path.join(output_subdir, 'target_distribution.png'))
-
-    # Save histograms for all features
-    fig0, ax0 = plt.subplots(2, 3)
-    sns.histplot(trainX[:, 0], color="skyblue", bins=10, ax=ax0[0, 0])
-    sns.histplot(trainX[:, 1], color="olive", bins=10, ax=ax0[0, 1])
-    sns.histplot(trainX[:, 2], color="gold", bins=10, ax=ax0[1, 0])
-    sns.histplot(trainX[:, 3], color="teal", bins=10, ax=ax0[1, 1])
-    sns.histplot(trainX[:, 4], color="blue", bins=10, ax=ax0[1, 2])
+    plt.close()
     
-    # Label each plot with the corresponding feature name
-    ax0[0, 0].set_xlabel(gestures.feature_names[0])
-    ax0[0, 1].set_xlabel(gestures.feature_names[1])
-    ax0[1, 0].set_xlabel(gestures.feature_names[2])
-    ax0[1, 1].set_xlabel(gestures.feature_names[3])
-    ax0[1, 2].set_xlabel(gestures.feature_names[4])
+    # Save histograms for all features
+    n_features = trainX.shape[1]  # Total number of features (including Hu Moments)
+    fig0, ax0 = plt.subplots(2, (n_features + 1) // 2, figsize=(15, 10))
+
+    # Flatten axis array to simplify plotting in the loop
+    ax0 = ax0.flatten()
+
+    for i in range(n_features):
+        sns.histplot(trainX[:, i], bins=10, ax=ax0[i], kde=False)
+        ax0[i].set_xlabel(gestures.feature_names[i])
+    
     plt.tight_layout()
     plt.savefig(os.path.join(output_subdir, 'histogram_all_features.png'))
+    plt.close(fig0)  # Close the figure after saving
 
     # Generate scatter plots of features in the dataset in a for loop
     for i in range(0, trainX.shape[1]):
@@ -90,7 +89,7 @@ if __name__ == "__main__":
         plt.close(fig2)
 
     # Save feature correlation heatmap
-    plt.figure()
+    plt.figure(figsize=(16, 12))
     corr = np.corrcoef(trainX, rowvar=False)
     ax4 = sns.heatmap(corr, annot=True, xticklabels=gestures.feature_names, yticklabels=gestures.feature_names)
     plt.tight_layout()
