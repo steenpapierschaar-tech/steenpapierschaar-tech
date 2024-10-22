@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 import time
-from dataset_loader import load_files
+from application.datasetLoader import load_files
 
 # Function to handle trackbar changes
 def update_threshold(val):

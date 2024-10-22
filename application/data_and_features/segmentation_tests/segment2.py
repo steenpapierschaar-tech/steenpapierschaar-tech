@@ -4,7 +4,7 @@ import glob
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
-from dataset_loader import load_files
+from application.datasetLoader import load_files
 
 if __name__ == "__main__":
     
