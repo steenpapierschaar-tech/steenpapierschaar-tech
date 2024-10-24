@@ -1,6 +1,7 @@
 import os
 import cv2 as cv
 import numpy as np
+import pickle
 from segment import *
 from extract import *
 from sklearn.utils import Bunch
@@ -56,14 +57,23 @@ def appendToDataset(dataset, features, label):
     dataset['target'].append(label)
 
     return dataset
+def datasetBuilder(file_list, dataset_path='gestures_dataset.pkl'):
+    """
+    Build the dataset from the list of image files or load if exists.
+    If the dataset already exists, it will be loaded from the file system.
+    """
+    # Check if the dataset already exists
+    if os.path.exists(dataset_path):
+        print(f"[INFO] Loading existing dataset from {dataset_path}")
+        with open(dataset_path, 'rb') as f:
+            final_dataset = pickle.load(f)
+        return final_dataset
 
-def datasetBuilder(file_list):
-    """
-    Build the dataset from the list of image files
-    """
+    print("[INFO] Dataset not found, building a new one...")
+
     # Initialize the data matrix and feature names
     dataMatrix, featureNames = initDataMatrix()
-    
+
     # Create the dataset structure
     dataset = {
         'data': dataMatrix,
@@ -96,8 +106,62 @@ def datasetBuilder(file_list):
                           target=dataset['target'],
                           unique_targets=unique_targets,
                           feature_names=dataset['feature_names'])
+
+    # Save the final dataset to a file for future use
+    with open(dataset_path, 'wb') as f:
+        print(f"[INFO] Saving dataset to {dataset_path}")
+        pickle.dump(final_dataset, f)
     
     return final_dataset
+
+def loadGestures(file_list, dataset_path='gestures_dataset.pkl'):
+    """
+    Load the gesture dataset if it exists, otherwise build a new one.
+    """
+    return datasetBuilder(file_list, dataset_path)
+
+# def datasetBuilder(file_list):
+#     """
+#     Build the dataset from the list of image files
+#     """
+#     # Initialize the data matrix and feature names
+#     dataMatrix, featureNames = initDataMatrix()
+    
+#     # Create the dataset structure
+#     dataset = {
+#         'data': dataMatrix,
+#         'target': [],
+#         'feature_names': featureNames
+#     }
+
+#     # Process each image in the file list
+#     for filename in file_list:
+#         print(f"[INFO] Processing image: {filename}")
+        
+#         # Load the image
+#         image = cv.imread(filename)
+
+#         # Analyze the image to extract features
+#         features = analyzeImage(image)
+        
+#         # Extract the label from the directory (if needed)
+#         label = filename.split(os.path.sep)[-2]
+        
+#         # Append the features and label to the dataset
+#         dataset = appendToDataset(dataset, features, label)
+
+
+#     # Get unique target labels
+#     unique_targets = np.unique(dataset['target'])
+#     print(f"[INFO] Targets found: {unique_targets}")
+
+#     # Create a final dataset using Bunch
+#     final_dataset = Bunch(data=dataset['data'],
+#                           target=dataset['target'],
+#                           unique_targets=unique_targets,
+#                           feature_names=dataset['feature_names'])
+    
+#     return final_dataset 
 
 if __name__ == "__main__":
     """
