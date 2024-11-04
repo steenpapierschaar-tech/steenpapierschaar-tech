@@ -4,8 +4,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import LabelEncoder
 
 def ML_DecisionTree(gestures, coded_labels, label_names):
-    # Encode labels as integers
-    label_encoder = LabelEncoder()
     # Split dataset into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(gestures.data, coded_labels, test_size=0.2, random_state=42)
 
