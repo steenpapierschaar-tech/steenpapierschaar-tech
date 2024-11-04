@@ -11,6 +11,9 @@ from classefierSVM import ML_DecisionTree
 if __name__ == "__main__":
     """feature exploration"""
     
+    # Save start time
+    start_time = datetime.datetime.now()
+    
     # Create output directory with a timestamped subfolder
     output_dir = 'output'
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -106,5 +109,11 @@ if __name__ == "__main__":
     # Make sure all code is executed before closing
     plt.show(block=True)
     
-    
     print("[INFO] Done exploring features")
+    
+    # Save end time
+    end_time = datetime.datetime.now()
+    
+    # Calculate and print duration
+    duration = end_time - start_time
+    print(f"Duration: {duration}")
