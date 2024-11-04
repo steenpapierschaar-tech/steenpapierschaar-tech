@@ -7,7 +7,7 @@ import numpy as np
 from datasetLoader import loadFiles
 import argparse
 
-def prepareImage(image):
+def prepareImage2(image):
 
     original = image.copy()
     
@@ -55,7 +55,7 @@ def prepareImage(image):
     
     return opened_mask
 
-def prepareImage2(image):
+def prepareImage(image):
 
     image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
     image[:, :, 0] = 0
