@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
-from classefierSVM import ML_DecisionTree 
+from classefierSVM import ML_DecisionTree, ML_KNN, ML_SVM
 
 if __name__ == "__main__":
     """feature exploration"""
@@ -39,6 +39,10 @@ if __name__ == "__main__":
     coded_labels = le.fit_transform(gestures.target)
     
     ML_DecisionTree(gestures, coded_labels, le.classes_)
+    
+    ML_KNN(gestures, coded_labels, le.classes_,5)
+    
+    ML_SVM(gestures, coded_labels, le.classes_)
     
 
     # partition the data into training and testing splits using 75% of
