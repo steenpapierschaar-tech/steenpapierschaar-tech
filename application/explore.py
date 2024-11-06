@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 from classefierSVM import ML_DecisionTree, ML_KNN, ML_SVM
+from gridsearchML import GS_DecisionTree
 
 if __name__ == "__main__":
     """feature exploration"""
@@ -37,6 +38,8 @@ if __name__ == "__main__":
     # encode the categorical labels
     le = LabelEncoder()
     coded_labels = le.fit_transform(gestures.target)
+    
+    GS_DecisionTree(gestures, coded_labels, le.classes_)
     
     ML_DecisionTree(gestures, coded_labels, le.classes_)
     

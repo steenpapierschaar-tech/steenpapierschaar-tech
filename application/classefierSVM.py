@@ -2,8 +2,11 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 
+
+    
 def ML_DecisionTree(gestures, coded_labels, label_names):
     print(f"Starting DecisionTree")
     # Split dataset into training and testing sets
