@@ -5,6 +5,7 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 from datasetLoader import loadFiles
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import argparse
 
 def prepareImage2(image):
