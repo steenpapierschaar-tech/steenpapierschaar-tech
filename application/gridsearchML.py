@@ -1,8 +1,18 @@
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, classification_report
+import os
+import datetime
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
 
 def GS_DecisionTree(gestures, coded_labels, label_names):
+    output_dir = 'output'
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_subdir = os.path.join(output_dir, timestamp)    
+    if not os.path.exists(output_subdir):
+        os.makedirs(output_subdir, exist_ok=True)
     print(f"Starting DecisionTree with Hyperparameter Tuning")
 
     # Split dataset into training and testing sets
@@ -43,6 +53,18 @@ def GS_DecisionTree(gestures, coded_labels, label_names):
     # Display the results
     print(f"\nTest set accuracy: {accuracy:.2f}")
     print("Classification Report:\n", report)
+    
+    predictions = grid_search.predict(X_test)
+    
+    # Generate and plot confusion matrix
+    cm = confusion_matrix(y_test, predictions)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels= label_names)
+    
+    fig, ax = plt.subplots(figsize=(10, 7))
+    disp.plot(cmap="Blues", ax=ax, values_format='d')
+    ax.set_title('Confusion Matrix for grid Decision Tree Model')
+    plt.savefig(os.path.join(output_subdir, 'confusion_matrix_grid_DecisionTree.png'))
+    plt.close(fig)
 
     # Return the best model and the best hyperparameters
-    return best_dtree, grid_search.best_params_
+    return best_dtree, grid_search.best_params_ , grid_search
