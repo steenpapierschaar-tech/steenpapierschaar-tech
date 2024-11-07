@@ -19,9 +19,19 @@ def ML_DecisionTree(gestures, coded_labels, label_names):
     print(f"Starting DecisionTree")
     # Split dataset into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(gestures.data, coded_labels, test_size=0.2, random_state=42)
+    
+    # Best hyperparameters found
+    best_params = {
+        'criterion': 'entropy',
+        'max_depth': None,
+        'max_features': 'sqrt',
+        'min_samples_leaf': 1,
+        'min_samples_split': 2,
+        'splitter': 'best'
+    }
 
     # Create and train the Decision Tree classifier
-    clf = DecisionTreeClassifier()
+    clf = DecisionTreeClassifier(**best_params)
     clf.fit(X_train, y_train)
 
     # Make predictions on the test set

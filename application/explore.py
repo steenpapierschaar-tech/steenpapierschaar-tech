@@ -39,7 +39,7 @@ if __name__ == "__main__":
     le = LabelEncoder()
     coded_labels = le.fit_transform(gestures.target)
     
-    GS_DecisionTree(gestures, coded_labels, le.classes_)
+    #GS_DecisionTree(gestures, coded_labels, le.classes_)
     
     ML_DecisionTree(gestures, coded_labels, le.classes_)
     

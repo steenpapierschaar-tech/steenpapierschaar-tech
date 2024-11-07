@@ -24,7 +24,7 @@ def GS_DecisionTree(gestures, coded_labels, label_names):
     # Define the hyperparameter grid for tuning
     param_grid = {
         'criterion': ['gini', 'entropy'],  # Criterion for split quality
-        'max_depth': [None, 5, 10, 15, 20],  # Maximum depth of the tree
+        'max_depth': [None, 1, 2, 5, 10, 15, 20],  # Maximum depth of the tree
         'min_samples_split': [2, 5, 10],  # Minimum samples required to split a node
         'min_samples_leaf': [1, 2, 5],  # Minimum samples at leaf nodes
         'max_features': [None, 'auto', 'sqrt', 'log2'],  # Features to consider for splitting
