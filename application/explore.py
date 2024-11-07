@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
-from classefierSVM import ML_DecisionTree, ML_KNN, ML_SVM
+from classefiers import ML_DecisionTree, ML_KNN, ML_SVM
 from gridsearchML import GS_DecisionTree
 
 if __name__ == "__main__":
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     
     ML_DecisionTree(gestures, coded_labels, le.classes_)
     
-    ML_KNN(gestures, coded_labels, le.classes_,5)
+    #ML_KNN(gestures, coded_labels, le.classes_,5)
     
-    ML_SVM(gestures, coded_labels, le.classes_)
+    #ML_SVM(gestures, coded_labels, le.classes_)
     
 
     # partition the data into training and testing splits using 75% of
