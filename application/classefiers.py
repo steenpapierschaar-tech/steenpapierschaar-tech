@@ -2,7 +2,7 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 import os
 import datetime
@@ -40,14 +40,18 @@ def ML_DecisionTree(gestures, coded_labels, label_names):
     # Evaluate model performance
     accuracy = accuracy_score(y_test, y_pred)
     report = classification_report(y_test, y_pred, target_names=label_names)
+        
+    # Perform cross-validation (default 5-fold)
+    scores = cross_val_score(clf, X_train, y_train, cv=5)  # `cv=5` for 5-fold cross-validation
 
-    # Display results
+    # Print the results
+    print("Cross-validation scores:", scores)
+    print("Mean cross-validation score:", scores.mean())
     print(f"Accuracy: {accuracy:.2f}")
     print("Classification Report:\n", report)
-    predictions = clf.predict(X_test)
     
     # Generate and plot confusion matrix
-    cm = confusion_matrix(y_test, predictions)
+    cm = confusion_matrix(y_test, y_pred)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels= label_names)
     
     fig, ax = plt.subplots(figsize=(10, 7))
