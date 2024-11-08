@@ -4,111 +4,80 @@ import glob
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
-from datasetLoader import loadFiles
+from fileHandler import loadFiles
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import argparse
 
-def prepareImage2(image):
-
-    original = image.copy()
+def prepareImage(image, grabcut=False):
     
-    image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-    image[:, :, 0] = 0  # Set the blue channel to 0
-    image[:, :, 1] = 0  # Set the green channel to 0
+    # Use GrabCut for image segmentation
+    if grabcut:
+        original = image.copy()
+        image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+        image[:, :, 0] = 0  # Set the blue channel to 0
+        image[:, :, 1] = 0  # Set the green channel to 0
 
-    # Define an initial mask for GrabCut algorithm
-    mask = np.zeros(image.shape[:2], np.uint8)
+        # Define an initial mask for GrabCut algorithm
+        mask = np.zeros(image.shape[:2], np.uint8)
 
-    # Create temporary arrays for GrabCut
-    bgdModel = np.zeros((1, 65), np.float64)
-    fgdModel = np.zeros((1, 65), np.float64)
+        # Create temporary arrays for GrabCut
+        bgdModel = np.zeros((1, 65), np.float64)
+        fgdModel = np.zeros((1, 65), np.float64)
 
-    # Define a rectangle around the object (hand) for GrabCut
-    rect = (1, 1, image.shape[1] - 2, image.shape[0] - 2)
+        # Define a rectangle around the object (hand) for GrabCut
+        rect = (1, 1, image.shape[1] - 2, image.shape[0] - 2)
 
-    # Apply GrabCut
-    cv.grabCut(image, mask, rect, bgdModel, fgdModel, 4, cv.GC_INIT_WITH_RECT)
+        # Apply GrabCut
+        cv.grabCut(image, mask, rect, bgdModel, fgdModel, 4, cv.GC_INIT_WITH_RECT)
 
-    # Modify the mask so that sure foreground and possible foreground are set to 1
-    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype("uint8")
+        # Modify the mask so that sure foreground and possible foreground are set to 1
+        mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype("uint8")
 
-    # Apply the mask to the image
-    image_no_bg = image * mask2[:, :, np.newaxis]
+        # Apply the mask to the image
+        image_no_bg = image * mask2[:, :, np.newaxis]
+        image_no_bg = cv.cvtColor(image_no_bg, cv.COLOR_BGR2GRAY)
+
+        # Threshold the image to get a binary mask
+        _, mask = cv.threshold(image_no_bg, 1, 255, cv.THRESH_BINARY)
+
+        # Apply morphological opening to remove small black spots inside the object
+        kernel = np.ones((5, 5), np.uint8)
+        opened_mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=2)
+
+        return opened_mask
     
-    image_no_bg = cv.cvtColor(image_no_bg, cv.COLOR_BGR2GRAY)
-
-    # Threshold the image to get a binary mask
-    _, mask = cv.threshold(image_no_bg, 1, 255, cv.THRESH_BINARY)
-    
-    # Apply morphological opening to remove small black spots inside the object
-    kernel = np.ones((5, 5), np.uint8)
-
-    # open
-    opened_mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=2)
-
-    # dilate
-    #dilated_mask = cv.dilate(mask, kernel, iterations=1)
-    # erode
-    #opened_mask = cv.erode(dilated_mask, kernel, iterations=1)
-    
-    # Show the mask
-    cv.imshow("Mask", opened_mask)
-    
-    return opened_mask
-
-def prepareImage(image):
-
-    image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-    image[:, :, 0] = 0
-    image[:, :, 1] = 0
-    # image[:,:,2] = 0
-    # cv.boost
-    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    # clahe = cv.createCLAHE(clipLimit=1.0, tileGridSize=(15,15))
-    # gray  = clahe.apply(gray)
-
-    gray = cv.GaussianBlur(gray, (9, 9), 0)
-
-    gray = cv.convertScaleAbs(gray, alpha=1.9, beta=0)
-
-    # Show grey image
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = cv.convertScaleAbs(gray, alpha=2, beta=0)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = cv.convertScaleAbs(gray, alpha=2, beta=0)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = extractPixels(gray)
-    gray = cv.GaussianBlur(gray, (5, 5), 0)
-    kernel = np.ones((6, 6), np.uint8)
-    canny = cv.Canny(gray, 100, 200)
-    canny = cv.dilate(canny, kernel, 1)
-
-    gray[canny == 255] = 0
-    gray = cv.convertScaleAbs(gray, alpha=1.3, beta=0)
-    gray = cv.GaussianBlur(gray, (25, 25), 0)
-    # gray = extractPixels(gray)
-
-    #cv.imshow("gray", gray)
-
-    # Not working this? 
-    # testjeroen(gray)
-
-    gray = cv.GaussianBlur(gray, (7, 7), 0)
-
-    #cv.imshow("canny", canny)
-    _, thresh = cv.threshold(gray, 128, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
-    # thresh = cv.dilate(thresh,kernel,1)
-    #cv.imshow("thres", thresh)
-
-    return thresh
+    # Use Koen's method for image thresholding
+    else:
+        image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+        image[:, :, 0] = 0
+        image[:, :, 1] = 0
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        gray = cv.GaussianBlur(gray, (9, 9), 0)
+        gray = cv.convertScaleAbs(gray, alpha=1.9, beta=0)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = cv.convertScaleAbs(gray, alpha=2, beta=0)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = cv.convertScaleAbs(gray, alpha=2, beta=0)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = extractPixels(gray)
+        gray = cv.GaussianBlur(gray, (5, 5), 0)
+        kernel = np.ones((6, 6), np.uint8)
+        canny = cv.Canny(gray, 100, 200)
+        canny = cv.dilate(canny, kernel, 1)
+        gray[canny == 255] = 0
+        gray = cv.convertScaleAbs(gray, alpha=1.3, beta=0)
+        gray = cv.GaussianBlur(gray, (25, 25), 0)
+        gray = cv.GaussianBlur(gray, (7, 7), 0)
+        _, thresh = cv.threshold(gray, 128, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+        return thresh
 
 def extractPixels(gray):
     # gray = cv.GaussianBlur(gray,(3,3),0)
@@ -196,30 +165,27 @@ def segmentImage(image):
     
     return result
 
+# Update the main function to test the combined prepareImage function
 if __name__ == "__main__":
     """
     Test functions in this file
     """
-    
     # load all dataset image files
     fileList = loadFiles()
     
     for filename in fileList:
-        
         print("[INFO] processing image: {}".format(filename))
         
         # load and process the image
-        
-        image = cv.imread(filename)       
+        image = cv.imread(filename)
         original = image.copy()
-        grabCutted = testGrabCut(image)
+        grabCutted = prepareImage(image, grabcut=True)
         prepared = prepareImage(image)
         extracted = extractPixels(prepared)
         sobeled = sobel(image)
         masked = cv.bitwise_and(original, original, mask=prepared)
         
         # Convert images back to RGB for visualization
-        
         original = cv.cvtColor(original, cv.COLOR_BGR2RGB)
         grabCutted = cv.cvtColor(grabCutted, cv.COLOR_BGR2RGB)
         prepared = cv.cvtColor(prepared, cv.COLOR_BGR2RGB)
@@ -228,7 +194,6 @@ if __name__ == "__main__":
         masked = cv.cvtColor(masked, cv.COLOR_BGR2RGB)
         
         # Label the images
-        
         cv.putText(original, 'Original', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
         cv.putText(grabCutted, 'GrabCut', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
         cv.putText(prepared, 'Prepared', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
@@ -237,7 +202,6 @@ if __name__ == "__main__":
         cv.putText(masked, 'Masked', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
         
         # Show the images together
-        
         row_A = cv.vconcat([original, grabCutted, prepared])
         row_B = cv.vconcat([extracted, sobeled, masked])
         combined = cv.hconcat([row_A, row_B])

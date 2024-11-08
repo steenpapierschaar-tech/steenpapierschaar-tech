@@ -5,7 +5,7 @@ import pandas as pd
 from segment import *
 from extract import *
 from sklearn.utils import Bunch
-from datasetLoader import loadFiles
+from fileHandler import loadFiles
 
 def initDataMatrix():
     """
@@ -32,17 +32,7 @@ def analyzeImage(image):
     # Get features from contour
     features = getFeatures(contour)
     
-    # Compute moments and Hu Moments
-    moments = cv.moments(contour)  # Compute spatial moments
-    huMoments = cv.HuMoments(moments).flatten()  # Compute Hu moments and flatten the array
-    
-    # Normalize Hu moments for numerical stability
-    huMoments = -np.sign(huMoments) * np.log10(np.abs(huMoments) + 1e-12)  # Log transformation for numerical stability
-    
-    # Combine all features
-    combinedFeatures = np.hstack((features, huMoments))
-    
-    return combinedFeatures
+    return features
 
 def saveDatasetToCSV(dataset, dataset_path):
     """
@@ -79,11 +69,13 @@ def appendToDataset(dataset, features, label):
 
     return dataset
 
-def datasetBuilder(file_list, dataset_path='gestures_dataset.csv'):
+def datasetBuilder(file_list, output_dir, dataset_filename='gestures_dataset.csv'):
     """
     Build the dataset from the list of image files or load if exists.
     If the dataset already exists, it will be loaded from the file system.
     """
+    dataset_path = os.path.join(output_dir, dataset_filename)
+    
     # Check if the dataset already exists
     if os.path.exists(dataset_path):
         print(f"[INFO] Loading existing dataset from {dataset_path}")
@@ -132,11 +124,11 @@ def datasetBuilder(file_list, dataset_path='gestures_dataset.csv'):
     
     return final_dataset
 
-def loadGestures(file_list, dataset_path='gestures_dataset.csv'):
+def loadGestures(file_list, output_dir, dataset_filename='gestures_dataset.csv'):
     """
     Load the gesture dataset if it exists, otherwise build a new one.
     """
-    return datasetBuilder(file_list, dataset_path)
+    return datasetBuilder(file_list, output_dir, dataset_filename)
 
 if __name__ == "__main__":
     """
@@ -146,7 +138,7 @@ if __name__ == "__main__":
     fileList = loadFiles()
 
     # Build the dataset from the image files
-    gestures = datasetBuilder(fileList)
+    gestures = datasetBuilder(fileList, 'output_directory')
 
     # Output details about the dataset
     print(dir(gestures))
