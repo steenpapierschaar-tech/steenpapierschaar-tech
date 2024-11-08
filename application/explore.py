@@ -133,6 +133,14 @@ if __name__ == "__main__":
     le = LabelEncoder()
     coded_labels = le.fit_transform(gestures.target)
     
+    # Select the top 5 most unique features
+    top_unique_features = selectTopUniqueFeatures(gestures.data, gestures.feature_names, top_n=5)
+    print(f"[INFO] Top 5 unique features: {top_unique_features}")
+    
+    # Filter the dataset to include only the top 5 unique features
+    #gestures.data = filterFeatures(gestures.data, gestures.feature_names, top_unique_features)
+    #gestures.feature_names = top_unique_features
+    
     #GS_DecisionTree(gestures, coded_labels, le.classes_)
     
     ML_DecisionTree(gestures, coded_labels, le.classes_, output_subdir)

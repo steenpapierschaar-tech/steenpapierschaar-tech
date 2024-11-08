@@ -6,6 +6,7 @@ from segment import *
 from extract import *
 from sklearn.utils import Bunch
 from fileHandler import loadFiles
+from sklearn.preprocessing import MinMaxScaler
 
 def initDataMatrix():
     """
@@ -40,6 +41,12 @@ def saveDatasetToCSV(dataset, dataset_path):
     """
     df = pd.DataFrame(dataset['data'], columns=dataset['feature_names'])
     df['target'] = dataset['target']
+    
+    # Scale the features before saving
+    features = df.columns[:-1]
+    scaler = MinMaxScaler()
+    df[features] = scaler.fit_transform(df[features])
+    
     df.to_csv(dataset_path, index=False)
     print(f"[INFO] Dataset saved to {dataset_path}")
 
@@ -68,6 +75,28 @@ def appendToDataset(dataset, features, label):
     dataset['target'].append(label)
 
     return dataset
+
+def selectTopUniqueFeatures(trainX, feature_names, top_n=5):
+    """ Select the top N most unique features based on average correlation """
+    # Calculate the correlation matrix
+    corr_matrix = np.corrcoef(trainX, rowvar=False)
+    
+    # Calculate the total (average) correlation for each feature
+    total_correlation = np.mean(np.abs(corr_matrix), axis=1)
+    
+    # Combine feature names with their total correlation for easy sorting
+    unique_features = sorted(zip(feature_names, total_correlation), key=lambda x: x[1])
+    
+    # Extract the top N unique feature names
+    top_unique_features = [feature for feature, _ in unique_features[:top_n]]
+    
+    return top_unique_features
+
+def filterFeatures(data, feature_names, selected_features):
+    """ Filter the dataset to include only the selected features """
+    selected_indices = [feature_names.index(feature) for feature in selected_features]
+    filtered_data = data[:, selected_indices]
+    return filtered_data
 
 def datasetBuilder(file_list, output_dir, dataset_filename='gestures_dataset.csv'):
     """
