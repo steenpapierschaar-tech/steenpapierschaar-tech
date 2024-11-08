@@ -8,7 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance
 import matplotlib.pyplot as plt
 import seaborn as sns
-from fetch_data import loadFiles, datasetBuilder
+from fetch_data import datasetBuilder
+from fileHandler import loadFiles
 
 def score_features(gestures):
     """ Train model and score feature importance """
@@ -64,7 +65,7 @@ if __name__ == "__main__":
 
     # Load the dataset
     fileList = loadFiles()
-    gestures = datasetBuilder(fileList)
+    gestures = datasetBuilder(fileList, output_subdir)
 
     # Score the features
     feature_importances, perm_importance = score_features(gestures)
