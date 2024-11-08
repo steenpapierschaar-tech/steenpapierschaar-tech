@@ -3,7 +3,7 @@ import glob
 import cv2 as cv
 import numpy as np
 from segment import *
-from datasetLoader import loadFiles
+from fileHandler import loadFiles
 
 def getLargestContour(img_BW):
     """ Return largest contour in foreground as an nd.array """
@@ -40,7 +40,7 @@ def getFeatures(contour):
     
     if contour is None or len(contour) == 0:
         # Return a zero vector of appropriate length when no contour is found
-        return np.zeros(8)
+        return np.zeros(15)
     
     # get bounding box
     x,y,w,h = cv.boundingRect(contour)
@@ -79,20 +79,23 @@ def getFeatures(contour):
 
     compactness = contourLength/area
     
-    moments = cv.moments(contour)
-    huMoment = cv.HuMoments(moments)
-    huMoment = -1.0 * np.sign(huMoment) * np.log10(abs(huMoment))
-    
     circularity = (4*np.pi*area)/(contourLength**2)
     
     aspectRatio = float(w)/h
     
     extent = float(area)/(w*h)
 
-    # compile a feature vector
-    features = np.array([area, contourLength, ConvexHullLength, ConvexityDefects, compactness, circularity, aspectRatio, extent])
+    # Compute moments and Hu Moments
+    moments = cv.moments(contour)  # Compute spatial moments
+    huMoments = cv.HuMoments(moments).flatten()  # Compute Hu moments and flatten the array
+    
+    # Normalize Hu moments for numerical stability
+    huMoments = -np.sign(huMoments) * np.log10(np.abs(huMoments) + 1e-12)  # Log transformation for numerical stability
 
-    return (features)
+    # compile a feature vector
+    features = np.hstack((np.array([area, contourLength, ConvexHullLength, ConvexityDefects, compactness, circularity, aspectRatio, extent]), huMoments))
+
+    return features
 
 def getSimpleContourFeatures(contour):
     """ Return some simple contour features

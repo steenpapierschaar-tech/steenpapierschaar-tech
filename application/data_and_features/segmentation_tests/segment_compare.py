@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from application.datasetLoader import load_files
+from fileHandler import load_files
 
 # This might be interesting to use as a reference
 # https://docs.opencv.org/4.x/d1/dc5/tutorial_background_subtraction.html
