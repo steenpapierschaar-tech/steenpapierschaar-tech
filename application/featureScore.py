@@ -57,10 +57,10 @@ def plot_feature_importance(importances, feature_names, output_subdir, plot_titl
 
 if __name__ == "__main__":
     # Create output directory
-    output_dir = outputDir()
+    output_dir = createOutputDir()
     
     # Create timestamped subdirectory
-    timestamped_dir = timestampedDir(output_dir)
+    timestamped_dir = createTimestampDir(output_dir)
 
     # Load the dataset
     fileList = loadFiles()

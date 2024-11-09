@@ -10,6 +10,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from fileHandler import loadFiles, createOutputDir, createSubDir, createTimestampDir
+from fetch_data import datasetBuilder
+from featureScore import score_features, plot_feature_importance
 
 def save_classification_report(report, outputDirectory, model_name):
     """ Save classification report to a CSV file """
@@ -142,11 +144,11 @@ if __name__ == "__main__":
     feature_importances, perm_importance = score_features(gestures)
 
     # Plot Random Forest Feature Importance
-    plot_feature_importance(feature_importances, gestures.feature_names, timestamped_dir, 
+    plot_feature_importance(feature_importances, gestures.feature_names, timestampDir, 
                             'Random Forest Feature Importance', 'rf_feature_importance.png')
 
     # Plot Permutation Importance
-    plot_feature_importance(perm_importance.importances_mean, gestures.feature_names, timestamped_dir, 
+    plot_feature_importance(perm_importance.importances_mean, gestures.feature_names, timestampDir, 
                             'Permutation Feature Importance', 'permutation_importance.png')
 
     # Save importance scores to CSV
@@ -156,6 +158,6 @@ if __name__ == "__main__":
         'Permutation Importance': perm_importance.importances_mean
     }).sort_values(by='RandomForest Importance', ascending=False)
 
-    importance_data.to_csv(os.path.join(timestamped_dir, 'feature_importance_scores.csv'), index=False)
+    importance_data.to_csv(os.path.join(timestampDir, 'feature_importance_scores.csv'), index=False)
 
-    print(f"[INFO] Feature scoring completed and saved to {timestamped_dir}")
+    print(f"[INFO] Feature scoring completed and saved to {timestampDir}")
