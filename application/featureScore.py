@@ -2,14 +2,14 @@ import os
 import numpy as np
 import datetime
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler, RobustScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance
 import matplotlib.pyplot as plt
 import seaborn as sns
 from fetch_data import datasetBuilder
-from fileHandler import loadFiles
+from fileHandler import loadFiles, createOutputDir, createSubDir, createTimestampDir
 
 def score_features(gestures):
     """ Train model and score feature importance """
@@ -23,7 +23,7 @@ def score_features(gestures):
         gestures.data, coded_labels, test_size=0.25, stratify=gestures.target)
 
     # Data preparation (scaling)
-    scaler = StandardScaler()
+    scaler = RobustScaler()
     trainX = scaler.fit_transform(trainX)
     testX = scaler.transform(testX)
 
@@ -56,26 +56,25 @@ def plot_feature_importance(importances, feature_names, output_subdir, plot_titl
     plt.show()
 
 if __name__ == "__main__":
-    # Create output directory with a timestamped subfolder
-    output_dir = 'output'
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    output_subdir = os.path.join(output_dir, timestamp)    
-    if not os.path.exists(output_subdir):
-        os.makedirs(output_subdir, exist_ok=True)
+    # Create output directory
+    output_dir = outputDir()
+    
+    # Create timestamped subdirectory
+    timestamped_dir = timestampedDir(output_dir)
 
     # Load the dataset
     fileList = loadFiles()
-    gestures = datasetBuilder(fileList, output_subdir)
+    gestures = datasetBuilder(fileList, timestamped_dir)
 
     # Score the features
     feature_importances, perm_importance = score_features(gestures)
 
     # Plot Random Forest Feature Importance
-    plot_feature_importance(feature_importances, gestures.feature_names, output_subdir, 
+    plot_feature_importance(feature_importances, gestures.feature_names, timestamped_dir, 
                             'Random Forest Feature Importance', 'rf_feature_importance.png')
 
     # Plot Permutation Importance
-    plot_feature_importance(perm_importance.importances_mean, gestures.feature_names, output_subdir, 
+    plot_feature_importance(perm_importance.importances_mean, gestures.feature_names, timestamped_dir, 
                             'Permutation Feature Importance', 'permutation_importance.png')
 
     # Save importance scores to CSV
@@ -85,6 +84,6 @@ if __name__ == "__main__":
         'Permutation Importance': perm_importance.importances_mean
     }).sort_values(by='RandomForest Importance', ascending=False)
 
-    importance_data.to_csv(os.path.join(output_subdir, 'feature_importance_scores.csv'), index=False)
+    importance_data.to_csv(os.path.join(timestamped_dir, 'feature_importance_scores.csv'), index=False)
 
-    print(f"[INFO] Feature scoring completed and saved to {output_subdir}")
+    print(f"[INFO] Feature scoring completed and saved to {timestamped_dir}")

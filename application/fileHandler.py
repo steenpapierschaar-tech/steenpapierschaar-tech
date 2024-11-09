@@ -27,28 +27,48 @@ def loadFiles():
 
     return fileList
 
-def createOutputDir(subdir=None):
-    """Create timestamped output directory
-    If the output directory does not exist, it will be created.
-    If a custom subdirectory is provided, it will be appended to the output directory.
-    """
+def createOutputDir():
+    """Create timestamped output directory"""
 
     # Check if output directory exists
-    output_dir = os.path.join(os.getcwd(), "output")
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-        
+    outputDir = os.path.join(os.getcwd(), "output")
+    if not os.path.exists(outputDir):
+        os.makedirs(outputDir, exist_ok=True)
+    return outputDir
+
+def createTimestampDir(outputDir):
+    """Create timestamped output directory"""
+
     # Create timestamped subdirectory
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    output_subdir = os.path.join(output_dir, timestamp)
-    if subdir:
-        output_subdir = os.path.join(output_subdir, subdir)
-    if not os.path.exists(output_subdir):
-        os.makedirs(output_subdir, exist_ok=True)
-    return output_subdir
+    timestampDir = os.path.join(outputDir, timestamp)
+    if not os.path.exists(timestampDir):
+        os.makedirs(timestampDir, exist_ok=True)
+        
+    return timestampDir
 
+def createSubDir(timestampDir, subDir):
+    """Create custom subdirectory in timestamped directory"""
+
+    # Create timestamped subdirectory
+    subDir = os.path.join(timestampDir, subDir)
+    if not os.path.exists(subDir):
+        os.makedirs(subDir, exist_ok=True)
+        
+    return subDir
 
 if __name__ == "__main__":
+    
+    # Create output directory
+    outputDir = createOutputDir()
+    
+    # Create timestamped subdirectory
+    timestampDir = createTimestampDir(outputDir)
+    
+    # Create custom subdirectory
+    subdir = "Test_Directory"
+    subDir = createSubDir(timestampDir, subdir)
+    
     # Building the file list
     fileList = loadFiles()
 

@@ -4,7 +4,7 @@ import glob
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
-from fileHandler import loadFiles
+from fileHandler import loadFiles, createOutputDir, createSubDir, createTimestampDir
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import argparse
 
@@ -170,6 +170,16 @@ if __name__ == "__main__":
     """
     Test functions in this file
     """
+    # Create output directory
+    outputDir = createOutputDir()
+    
+    # Create timestamped subdirectory
+    timestampDir = createTimestampDir(outputDir)
+    
+    # Create custom subdirectory
+    subdir = "Test_Directory"
+    outputSubDir = createSubDir(timestampDir, subdir)
+    
     # load all dataset image files
     fileList = loadFiles()
     
