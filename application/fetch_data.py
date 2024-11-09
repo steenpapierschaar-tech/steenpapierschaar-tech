@@ -5,9 +5,9 @@ import pandas as pd
 from segment import *
 from extract import *
 from sklearn.utils import Bunch
-from fileHandler import loadFiles
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.ensemble import IsolationForest  # Add this import
+from fileHandler import loadFiles, createOutputDir, createSubDir, createTimestampDir
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
+from sklearn.ensemble import IsolationForest
 
 def initDataMatrix():
     """
@@ -73,7 +73,7 @@ def saveDatasetToCSV(dataset, dataset_path):
     
     # Scale the features before saving
     features = df.columns[:-1]
-    scaler = MinMaxScaler()
+    scaler = RobustScaler()
     df[features] = scaler.fit_transform(df[features])
     
     df.to_csv(dataset_path, index=False)
@@ -192,11 +192,17 @@ if __name__ == "__main__":
     """
     Main entry point for testing the functions.
     """
+    # Create output directory
+    output_dir = createOutputDir()
+    
+    # Create timestamped subdirectory
+    timestamped_dir = createTimestampDir(output_dir)
+
     # Load all dataset image files
     fileList = loadFiles()
 
     # Build the dataset from the image files
-    gestures = datasetBuilder(fileList, 'output_directory')
+    gestures = datasetBuilder(fileList, timestamped_dir)
 
     # Output details about the dataset
     print(dir(gestures))
