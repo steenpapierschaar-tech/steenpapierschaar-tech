@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from classifiers import ML_DecisionTree, ML_KNN, ML_SVM
 from gridsearchML import GS_DecisionTree
+import mediapipe as mp
+import cv2 as cv
+import live
+
 from fileHandler import loadFiles, createOutputDir, createSubDir, createTimestampDir
 
 def saveFeatureCorrelationHeatmap(trainX, feature_names, outputDirectory):
@@ -122,12 +126,17 @@ if __name__ == "__main__":
     
     # Select the top 5 most unique features
     top_unique_features = selectTopUniqueFeatures(gestures.data, gestures.feature_names, top_n=5)
-    print(f"[INFO] Top 5 unique features: {top_unique_features}")
+
     
     # Filter the dataset to include only the top 5 unique features
     gestures.data = filterFeatures(gestures.data, gestures.feature_names, top_unique_features)
     gestures.feature_names = top_unique_features
     
+    
+    #model =ML_DecisionTree(gestures, coded_labels, le.classes_, output_subdir)
+
+    
+    live.live(gestures,le)
     
     
     # Perform grid search and model selection
@@ -168,18 +177,18 @@ if __name__ == "__main__":
     dirFeatureUniqueness = createSubDir(timestampDir, 'Feature Uniqueness')
     saveFeatureUniqueness(trainX, gestures.feature_names, dirFeatureUniqueness)
 
-    # Close all figures
-    plt.close('all')
+    # # Close all figures
+    # plt.close('all')
     
-    # Make sure all code is executed before closing
-    plt.show(block=True)
+    # # Make sure all code is executed before closing
+    # plt.show(block=True)
     
-    # Print a message to indicate the end of the exploration
-    print("[INFO] Done exploring features")
+    # # Print a message to indicate the end of the exploration
+    # print("[INFO] Done exploring features")
     
-    # Save end time
-    end_time = datetime.datetime.now()
+    # # Save end time
+    # end_time = datetime.datetime.now()
     
-    # Calculate and print duration
-    duration = end_time - start_time
-    print(f"[INFO] Duration: {duration}")
+    # # Calculate and print duration
+    # duration = end_time - start_time
+    # print(f"[INFO] Duration: {duration}")
