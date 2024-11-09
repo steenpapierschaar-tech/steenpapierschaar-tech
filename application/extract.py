@@ -60,13 +60,13 @@ def getFeatures(contour):
     # get the top 2 convexity defects
     defects = getConvexityDefects(contour)
     
-    if defects is None or defects.size == 0:
-        print("No convexity defects found!")
-        ConvexityDefects = 0.0
     
-    if defects is not None and defects.size > 0:
+    # if defects is None or defects.size == 0:
+    #     print("No convexity defects found!")
+    #     ConvexityDefects = 0.0
+    
+    if defects is not None and defects.size > 4:
         defects = defects.squeeze()
-    
         convexityDefectsDepths = [defect[3] for defect in defects]
         
         # Sort depths in descending order and get the top 3
@@ -76,6 +76,8 @@ def getFeatures(contour):
         ConvexityDefects = np.mean(largest_depths)
         #print("Largest_depths", largest_depths)
         #print("Convexity defects: ", ConvexityDefects)
+    else:
+        return np.zeros(15)
 
     compactness = contourLength/area
     
