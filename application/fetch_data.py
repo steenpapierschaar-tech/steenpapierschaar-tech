@@ -7,6 +7,7 @@ from extract import *
 from sklearn.utils import Bunch
 from fileHandler import loadFiles
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import IsolationForest  # Add this import
 
 def initDataMatrix():
     """
@@ -35,12 +36,40 @@ def analyzeImage(image):
     
     return features
 
+def removeOutliers(data, contamination=0.05):
+    """
+        Detect and remove outliers from the dataset using Isolation Forest.
+    
+        Parameters:
+        data (array-like): The input data from which to remove outliers.
+        contamination (float, optional): The proportion of outliers in the data set. 
+                                         Should be between 0 and 0.5. Default is 0.05.
+
+        Returns:
+        mask (array-like): A boolean mask indicating the inliers (True) and outliers (False).
+
+        Notes:
+        The contamination parameter controls the threshold for the decision function. 
+        A higher contamination value means more points will be classified as outliers.
+    
+    """
+    iso_forest = IsolationForest(contamination=contamination)
+    outliers = iso_forest.fit_predict(data)
+    mask = outliers != -1
+    num_outliers = np.sum(outliers == -1)
+    print(f"[INFO] Detected {num_outliers} outliers")
+    return mask
+
 def saveDatasetToCSV(dataset, dataset_path):
     """
     Save the dataset to a CSV file.
     """
     df = pd.DataFrame(dataset['data'], columns=dataset['feature_names'])
     df['target'] = dataset['target']
+    
+    # Remove outliers before scaling
+    mask = removeOutliers(df[df.columns[:-1]].values)
+    df = df[mask]
     
     # Scale the features before saving
     features = df.columns[:-1]

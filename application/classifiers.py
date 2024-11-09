@@ -15,11 +15,13 @@ from fileHandler import loadFiles, createOutputDir
 def save_classification_report(report, output_subdir, model_name):
     """ Save classification report to a CSV file """
     
-    report_dir = createOutputDir("Performance metrics")
+    report_dir = os.path.join(output_subdir, "Performance metrics")
+    if not os.path.exists(report_dir):
+        os.makedirs(report_dir, exist_ok=True)
     report_df = pd.DataFrame(report).transpose()
     report_df.to_csv(os.path.join(report_dir, f'{model_name}_classification_report.csv'), index=True, index_label='Label')
     
-    print(f"[INFO] Classification report saved to {model_name}_classification_report.csv')")
+    print(f"[INFO] Classification report saved to {os.path.join(report_dir, f'{model_name}_classification_report.csv')}")
 
 def ML_DecisionTree(gestures, coded_labels, label_names, output_subdir):
     print("[INFO] Starting Decision Tree Classifier")
