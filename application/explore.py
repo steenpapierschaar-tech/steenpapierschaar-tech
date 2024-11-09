@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from classifiers import ML_DecisionTree, ML_KNN, ML_SVM
 from gridsearchML import GS_DecisionTree
+import mediapipe as mp
+import cv2 as cv
+import live
+
 
 def createOutputDir():
     """ Create output directory with a timestamped subfolder """
@@ -135,7 +139,7 @@ if __name__ == "__main__":
     
     # Select the top 5 most unique features
     top_unique_features = selectTopUniqueFeatures(gestures.data, gestures.feature_names, top_n=5)
-    print(f"[INFO] Top 5 unique features: {top_unique_features}")
+
     
     # Filter the dataset to include only the top 5 unique features
     #gestures.data = filterFeatures(gestures.data, gestures.feature_names, top_unique_features)
@@ -143,11 +147,15 @@ if __name__ == "__main__":
     
     #GS_DecisionTree(gestures, coded_labels, le.classes_)
     
-    ML_DecisionTree(gestures, coded_labels, le.classes_, output_subdir)
+    #model =ML_DecisionTree(gestures, coded_labels, le.classes_, output_subdir)
+
     
-    ML_KNN(gestures, coded_labels, le.classes_, output_subdir, 5)
+    live.live(gestures,le)
     
-    ML_SVM(gestures, coded_labels, le.classes_, output_subdir)
+    
+    # ML_KNN(gestures, coded_labels, le.classes_, output_subdir, 5)
+    
+    # ML_SVM(gestures, coded_labels, le.classes_, output_subdir)
     
     # partition the data into training and testing splits using 75% of the data for training and the remaining 25% for testing
     (trainX, testX, trainY, testY) = train_test_split(gestures.data, coded_labels, test_size=0.25, stratify=gestures.target, random_state=42)
@@ -156,35 +164,35 @@ if __name__ == "__main__":
     trainX = StandardScaler().fit_transform(trainX)
 
     # Save target distribution
-    saveTargetDistribution(trainY, gestures.unique_targets, output_subdir)
+    # saveTargetDistribution(trainY, gestures.unique_targets, output_subdir)
     
-    # Save histograms for all features
-    saveHistograms(trainX, gestures.feature_names, output_subdir)
+    # # Save histograms for all features
+    # saveHistograms(trainX, gestures.feature_names, output_subdir)
 
-    # Save scatter plots for all features
-    saveScatterPlots(trainX, trainY, gestures.feature_names, output_subdir, le)
+    # # Save scatter plots for all features
+    # saveScatterPlots(trainX, trainY, gestures.feature_names, output_subdir, le)
     
-    # Save boxplots for all features
-    saveBoxPlots(trainX, trainY, gestures.feature_names, output_subdir, le)
+    # # Save boxplots for all features
+    # saveBoxPlots(trainX, trainY, gestures.feature_names, output_subdir, le)
 
-    # Save feature correlation heatmap
-    saveFeatureCorrelationHeatmap(trainX, gestures.feature_names, output_subdir)
+    # # Save feature correlation heatmap
+    # saveFeatureCorrelationHeatmap(trainX, gestures.feature_names, output_subdir)
     
-    # Save feature uniqueness plot
-    saveFeatureUniqueness(trainX, gestures.feature_names, output_subdir)
+    # # Save feature uniqueness plot
+    # saveFeatureUniqueness(trainX, gestures.feature_names, output_subdir)
 
-    # Close all figures
-    plt.close('all')
+    # # Close all figures
+    # plt.close('all')
     
-    # Make sure all code is executed before closing
-    plt.show(block=True)
+    # # Make sure all code is executed before closing
+    # plt.show(block=True)
     
-    # Print a message to indicate the end of the exploration
-    print("[INFO] Done exploring features")
+    # # Print a message to indicate the end of the exploration
+    # print("[INFO] Done exploring features")
     
-    # Save end time
-    end_time = datetime.datetime.now()
+    # # Save end time
+    # end_time = datetime.datetime.now()
     
-    # Calculate and print duration
-    duration = end_time - start_time
-    print(f"[INFO] Duration: {duration}")
+    # # Calculate and print duration
+    # duration = end_time - start_time
+    # print(f"[INFO] Duration: {duration}")
