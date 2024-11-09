@@ -77,6 +77,7 @@ def prepareImage(image, grabcut=False):
         gray = cv.GaussianBlur(gray, (25, 25), 0)
         gray = cv.GaussianBlur(gray, (7, 7), 0)
         _, thresh = cv.threshold(gray, 128, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+        # thresh = cv.resize(thresh, (320, 240), interpolation=cv.INTER_NEAREST)
         return thresh
 
 def extractPixels(gray):
