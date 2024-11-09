@@ -62,6 +62,8 @@ def ML_DecisionTree(gestures, coded_labels, label_names, outputDirectory):
     ax.set_title('Confusion Matrix for Decision Tree Model')
     plt.savefig(os.path.join(outputDirectory, 'confusion_matrix_DecisionTree.png'))
     plt.close(fig)
+    
+    
 
 def ML_KNN(gestures, coded_labels, label_names, outputDirectory, n_neighbors = 5):
     """ Train and evaluate the K-Nearest Neighbors classifier """
