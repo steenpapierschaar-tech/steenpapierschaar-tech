@@ -1,40 +1,62 @@
-import cv2 as cv
-from preprocessing import preprocessingPipeline as pipe
-# from preprocessing import grayscale, rescaleImages, histogramEqualization
 from dataAugmentation import augmentData
-from fileHandler import loadFiles, countFiles
+from fileHandler import loadFiles, createOutputDir, createTimestampDir, createSubDir
 from modelDesign import createModel
+from dataLoader import load_data
+import os
+import json
 
 if __name__ == "__main__":
     
     # File handling
     filelist = loadFiles("photoDataset")
-
-    # Count the number of images
-    datasetSize = len(filelist)
-    print(f"[INFO] Amount of images loaded: {datasetSize}")
-
-    # Augment data by generating new images
+    print(f"[INFO] Amount of images loaded: {len(filelist)}")
+    
+    # First split the data
+    (train_images, train_labels), (val_images, val_labels) = load_data(filelist)
+    
+    # Then augment the training data if needed
     target_size = 500
-    if len(filelist) < target_size:
-        filelist = augmentData(filelist, target_size)
+    if len(train_images) < target_size:
+        print(f"[INFO] Augmenting training data from {len(train_images)} to {target_size} images")
+        train_images, train_labels = augmentData(train_images, train_labels, target_size)
     
-    datasetSize = len(filelist)
-    print(f"[INFO] Dataset size: {datasetSize}")
+    print(f"[INFO] Final training set size: {len(train_images)}")
+    print(f"[INFO] Validation set size: {len(val_images)}")
     
-    # Design CNN model
+    # Get number of classes from the final labels shape
+    num_classes = train_labels.shape[1]
     
+    # Design and compile CNN model
+    model = createModel(num_classes)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     
-    # Compile model
+    # Create output directories
+    outputDir = createOutputDir()
+    timestampDir = createTimestampDir(outputDir)
+    modelDir = createSubDir(timestampDir, "model")
+    historyDir = createSubDir(timestampDir, "history")
     
-    # Parameter tuning
+    # TODO: Add tensorboard
     
-    # Train model
+    # Train model with basic config
+    history = model.fit(
+        train_images, train_labels,
+        validation_data=(val_images, val_labels),
+        epochs=10,
+        batch_size=32
+    )
+
+    # Save the trained model
+    model.save(os.path.join(modelDir, "trained_model.keras"))
     
-    # Transfer learning
+    # Save training history
+    with open(os.path.join(historyDir, "training_history.json"), "w") as f:
+        json.dump(history.history, f)
     
-    # Performance analysis
+    # TODO: Parameter tuning using grid search or random search
+
+    # TODO: Performance analysis
     
-    # Model analysis
-    
-    # Visualize CNN model
+    # TODO: Add layer visualization
+
+    # TODO: Transfer learning using pre-trained models
