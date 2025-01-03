@@ -13,3 +13,6 @@ __pycache__/
 application/data_and_features/__pycache__/fetch_data.cpython-312.pyc
 .venv/
 output/
+
+# Dynamic application output
+photoDataset_aug/
