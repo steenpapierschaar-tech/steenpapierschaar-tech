@@ -5,7 +5,7 @@ Main repository
 
 **Create virtual environment**:
 ```
-python -m venv --system-site-packages .venv
+python3.10 -m venv .venv
 ```
 
 **Activate virtual environment**:
@@ -15,12 +15,8 @@ source .venv/bin/activate
 
 **Install libraries using pip**:
 ```Python
-pip install tk numpy scipy scikit-learn imutils opencv-python seaborn matplotlib
-```
-
-**Python packages**:
-```Python
-python3 -m pip install tk numpy scipy scikit-learn imutils opencv-python seaborn matplotlib
+pip install --upgrade pip
+pip install tk numpy scipy scikit-learn imutils opencv-python seaborn matplotlib tensorflow keras
 ```
 
 **Run scripts**:
