@@ -1,72 +1,118 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
-import cv2
-import os
-from fileHandler import loadFiles, createAugmentedDirs
+from collections import defaultdict
+import matplotlib.pyplot as plt
 
-def augmentData(filelist, target_size):   
-    # Calculate the size of the dataset
-    size = len(filelist)
+def display_augmented_samples(original_images, augmented_images, n_samples=5):
+    """Display original images next to their augmented versions"""
+    # Safety check for empty lists or mismatched sizes
+    if not original_images or not augmented_images:
+        print("[WARNING] No samples to display")
+        return
+        
+    # Use minimum length to avoid index errors
+    n_samples = min(len(original_images), len(augmented_images), n_samples)
+    if n_samples == 0:
+        print("[WARNING] No samples to display")
+        return
+        
+    plt.figure(figsize=(2*n_samples, 4))
     
-    # Calculate the number of images to generate
-    new_size = target_size - size
+    for idx in range(n_samples):
+        # Display original image
+        plt.subplot(2, n_samples, idx + 1)
+        plt.imshow(original_images[idx])
+        plt.axis('off')
+        if idx == 0:
+            plt.title('Original')
+            
+        # Display augmented image
+        plt.subplot(2, n_samples, n_samples + idx + 1)
+        plt.imshow(augmented_images[idx])
+        plt.axis('off')
+        if idx == 0:
+            plt.title('Augmented')
     
-    # Print the number of images to be generated
-    print(f"Number of images to be generated: {new_size}")
+    plt.tight_layout()
+    plt.show()
+
+def augmentData(images, labels, target_size):
+    """
+    Augment the training data to reach target_size, ensuring balanced classes
+    """
     
-    # Ensure the augmented directories exist
-    baseDir = os.path.join(os.getcwd(), "photoDataset_aug")
-    augDirs = createAugmentedDirs(baseDir)
+    # TODO: Add vertical flip option
+    # TODO: Add brightness/contrast augmentation
     
-    print("[INFO] Augmented directories created: ", augDirs)
+    # Calculate number of images to generate
+    num_to_generate = target_size - len(images)
     
-    # Initialize the ImageDataGenerator
+    # Group images by their labels
+    label_indices = defaultdict(list)
+    for idx, label in enumerate(labels):
+        label_idx = np.argmax(label)  # Convert one-hot back to index
+        label_indices[label_idx].append(idx)
+    
+    num_classes = len(label_indices)
+    images_per_class = num_to_generate // num_classes
+    
+    print(f"\n[INFO] Augmentation plan:")
+    print(f"    Total new images needed: {num_to_generate}")
+    print(f"    Number of classes: {num_classes}")
+    print(f"    Images to generate per class: {images_per_class}")
+    
+    # Initialize the ImageDataGenerator with moderate augmentation
     datagen = ImageDataGenerator(
-        rotation_range=40,
-        width_shift_range=0.2,
+        rotation_range=40,     # Moderate rotation
+        width_shift_range=0.2, # Slight position shifts
         height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'
+        shear_range=0.2,      # Moderate shear
+        zoom_range=0.2,       # Moderate zoom
+        horizontal_flip=True,  # Mirror images
+        fill_mode='nearest'    # Fill empty spaces
     )
     
-    # Group images by category
-    categories = {}
-    for img_path in filelist:
-        category = os.path.basename(os.path.dirname(img_path))
-        if category not in categories:
-            categories[category] = []
-        categories[category].append(img_path)
+    # Generate new images
+    augmented_images = []
+    augmented_labels = []
     
-    # Print found categories and their counts
-    for category, img_paths in categories.items():
-        print(f"[INFO] Found category '{category}' with {len(img_paths)} images.")
+    # Keep track of some original-augmented pairs for visualization
+    vis_originals = []
+    vis_augmented = []
+    samples_to_show = 5
     
-    # Calculate the number of images to generate per category
-    num_categories = len(categories)
-    new_size_per_category = new_size // num_categories
-    
-    print(f"[INFO] Generating {new_size_per_category} images per category.")
-    
-    # Generate new images for each category
-    for category, img_paths in categories.items():
-        augDir = augDirs.get(category, baseDir)
-        for i in range(new_size_per_category):
-            img_path = img_paths[i % len(img_paths)]
-            img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-            img = np.expand_dims(img, 0)
+    # Generate images for each class
+    for label_idx, indices in label_indices.items():
+        print(f"[INFO] Generating {images_per_class} new images for class {label_idx}")
+        
+        for i in range(images_per_class):
+            # Cycle through existing images of this class
+            idx = indices[i % len(indices)]
+            img = images[idx]
+            label = labels[idx]
             
-            # Get original filename without extension
-            orig_filename = os.path.splitext(os.path.basename(img_path))[0]
+            # Generate a new augmented image
+            aug_img = next(datagen.flow(np.expand_dims(img, 0), batch_size=1))[0]
             
-            for batch in datagen.flow(img, batch_size=1, save_to_dir=augDir, 
-                                      save_prefix=orig_filename, save_format='png'):
-                break
+            # Only store visualization samples from the first few iterations
+            if i < samples_to_show:
+                vis_originals.append(img)
+                vis_augmented.append(aug_img)
+            
+            augmented_images.append(aug_img)
+            augmented_labels.append(label)
     
-    # Update filelist with augmented images
-    augmented_files = loadFiles(baseDir)
-    filelist.extend(augmented_files)
+    # Only display samples if we have them
+    if vis_originals and vis_augmented:
+        display_augmented_samples(vis_originals, vis_augmented)
     
-    return filelist
+    # Combine original and augmented data
+    final_images = np.concatenate([images, np.array(augmented_images)])
+    final_labels = np.concatenate([labels, np.array(augmented_labels)])
+    
+    print(f"\n[INFO] Augmentation complete:")
+    print(f"    Original dataset size: {len(images)}")
+    print(f"    New images generated: {len(augmented_images)}")
+    print(f"    Final dataset size: {len(final_images)}")
+    
+    return final_images, final_labels
