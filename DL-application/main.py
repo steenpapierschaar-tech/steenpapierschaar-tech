@@ -4,6 +4,7 @@ from modelDesign import createModel
 from dataLoader import load_data
 import os
 import json
+import tensorflow as tf
 
 if __name__ == "__main__":
     
@@ -35,15 +36,19 @@ if __name__ == "__main__":
     timestampDir = createTimestampDir(outputDir)
     modelDir = createSubDir(timestampDir, "model")
     historyDir = createSubDir(timestampDir, "history")
+    logDir = createSubDir(timestampDir,"logs")
     
-    # TODO: Add tensorboard
+    # Add %tensorboard
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logDir, histogram_freq=1)
+    
     
     # Train model with basic config
     history = model.fit(
         train_images, train_labels,
         validation_data=(val_images, val_labels),
-        epochs=10,
-        batch_size=32
+        epochs=20,
+        batch_size=32,
+        callbacks=[tensorboard_callback]
     )
 
     # Save the trained model
