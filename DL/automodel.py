@@ -6,6 +6,11 @@ import tensorflow as tf
 import autokeras as ak
 from tensorflow.keras.callbacks import EarlyStopping
 
+epochs = 20
+
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+
 
 # Reduce verbosity of TensorFlow
 import os
@@ -62,7 +67,7 @@ model = ak.AutoModel(
     objective="val_loss",
     seed=random_seed,
     overwrite=False,
-    max_trials=500
+    max_trials=100
 )
 
 # Create early stopping callback
@@ -70,13 +75,13 @@ early_stopping = EarlyStopping(
     monitor='val_loss',
     patience=5,
     restore_best_weights=True,
-    verbose=1
+    verbose=2
 )
 
 model.fit(
     ds_train,
     validation_data=ds_val,
-    epochs=50,
+    epochs=epochs,
     callbacks=[early_stopping]
 )
 

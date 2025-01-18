@@ -5,6 +5,31 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from collections import Counter
 
+def prepareFiles(filelist):
+    """
+    Prepare files for training
+    """
+    print(f"[INFO] Prepare files for training: Resize and convert to R without BG")
+    for i, filepath in enumerate(filelist):
+        image = cv2.imread(filepath)
+        height, width = image.shape[:2]
+        
+        # Resize images by a factor of 10
+        new_dimensions = (32, 24)
+        resized_image = cv2.resize(image, new_dimensions)
+        
+        # # Convert to RGB and set blue and green channels to 0 --> negatief resultaat!
+        # resized_image = cv2.cvtColor(resized_image, cv2.COLOR_RGB2BGR)
+        # resized_image[:, :, 0] = 0  # Set the blue channel to 0
+        # resized_image[:, :, 1] = 0  # Set the green channel to 0
+        
+        # Save the preparet image
+        cv2.imwrite(filepath, resized_image)
+        
+    #     cv2.imshow("Resized image", resized_image)
+    
+    return filelist
+
 def load_data(filelist, validation_split=0.2):
     """
     Load images from filelist and split into training and validation sets
