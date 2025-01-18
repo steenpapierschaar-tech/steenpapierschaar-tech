@@ -1,22 +1,24 @@
 from dataAugmentation import augmentData
 from fileHandler import loadFiles, createOutputDir, createTimestampDir, createSubDir
 from modelDesign import createModel
-from dataLoader import load_data
+from dataLoader import load_data, prepareFiles
 import os
 import json
 import tensorflow as tf
 
-if __name__ == "__main__":
-    
-    # File handling
+def DeepLearning():
+     # File handling
     filelist = loadFiles("photoDataset")
     print(f"[INFO] Amount of images loaded: {len(filelist)}")
+    
+    #prepare files for training
+    prepareFiles(filelist)
     
     # First split the data
     (train_images, train_labels), (val_images, val_labels) = load_data(filelist)
     
     # Then augment the training data if needed
-    target_size = 500
+    target_size = 1500 #500
     if len(train_images) < target_size:
         print(f"[INFO] Augmenting training data from {len(train_images)} to {target_size} images")
         train_images, train_labels = augmentData(train_images, train_labels, target_size)
@@ -28,8 +30,10 @@ if __name__ == "__main__":
     num_classes = train_labels.shape[1]
     
     # Design and compile CNN model
-    model = createModel(num_classes)
+    model = createModel(num_classes)      
+                
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        
     
     # Create output directories
     outputDir = createOutputDir()
@@ -63,5 +67,16 @@ if __name__ == "__main__":
     # TODO: Performance analysis
     
     # TODO: Add layer visualization
+    
 
-    # TODO: Transfer learning using pre-trained models
+def TranferLearning():
+     # TODO: Transfer learning using pre-trained models --> p.375 Hands-on machinel learning with scikit-learn, keras & tensorflow
+    TFmodelDir = "TransferLearnModel/"
+    model_tf = tf.keras.models.load_model(os.path.join(TFmodelDir, "rock_paper_scissors_model.h5"))
+    model_tf.summary()
+
+if __name__ == "__main__":    
+    #DeepLearning()   
+    TranferLearning()
+
+   
