@@ -5,6 +5,8 @@ from dataLoader import load_data, prepareFiles
 import os
 import json
 import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 
 def DeepLearning():
      # File handling
@@ -29,11 +31,30 @@ def DeepLearning():
     # Get number of classes from the final labels shape
     num_classes = train_labels.shape[1]
     
-    # Design and compile CNN model
-    model = createModel(num_classes)      
-                
+    # Design and compile CNN model      
+    #model = createModel(num_classes)                      
+    #model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])        
+    model = Sequential([
+        Conv2D(16, (3, 3), activation='relu', input_shape=(24, 32, 3)),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dropout(0.25),
+
+        Conv2D(32, (3, 3), activation='relu'),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dropout(0.25),
+
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dropout(0.25),
+
+        Flatten(),
+        Dense(128, activation='relu'),
+        Dropout(0.5),
+        Dense(3, activation='softmax')
+    ])
+
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-        
+    model.summary()
     
     # Create output directories
     outputDir = createOutputDir()
@@ -43,18 +64,16 @@ def DeepLearning():
     logDir = createSubDir(timestampDir,"logs")
     
     # Add %tensorboard
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logDir, histogram_freq=1)
-    
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logDir, histogram_freq=1)    
     
     # Train model with basic config
     history = model.fit(
         train_images, train_labels,
         validation_data=(val_images, val_labels),
-        epochs=20,
+        epochs=50,
         batch_size=32,
         callbacks=[tensorboard_callback]
     )
-
     # Save the trained model
     model.save(os.path.join(modelDir, "trained_model.keras"))
     
@@ -71,12 +90,15 @@ def DeepLearning():
 
 def TranferLearning():
      # TODO: Transfer learning using pre-trained models --> p.375 Hands-on machinel learning with scikit-learn, keras & tensorflow
+     #Transfer learning does not work well with small dense networks, presumably because small networks learn a few patterns, and dense networks learn very specific patterns, 
+     # wich are unlikely to be usefull in other tasks. Transferlearning works best with deep convolutional neural networks, which tend to learn feature detectors that are much general. 
+     
     TFmodelDir = "TransferLearnModel/"
     model_tf = tf.keras.models.load_model(os.path.join(TFmodelDir, "rock_paper_scissors_model.h5"))
     model_tf.summary()
 
 if __name__ == "__main__":    
-    #DeepLearning()   
-    TranferLearning()
+    DeepLearning()   
+    #TranferLearning()
 
    
