@@ -17,3 +17,4 @@ output/
 # Dynamic application output
 photoDataset_aug/
 *.png
+*.png
