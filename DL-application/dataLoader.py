@@ -4,6 +4,7 @@ import os
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from collections import Counter
+from config import config
 
 def prepareFiles(filelist):
     """
@@ -14,9 +15,8 @@ def prepareFiles(filelist):
         image = cv2.imread(filepath)
         height, width = image.shape[:2]
         
-        # Resize images by a factor of 10
-        new_dimensions = (32, 24)
-        resized_image = cv2.resize(image, new_dimensions)
+        # Resize images using configured dimensions
+        resized_image = cv2.resize(image, config.IMAGE_DIMS)
         
         # # Convert to RGB and set blue and green channels to 0 --> negatief resultaat!
         # resized_image = cv2.cvtColor(resized_image, cv2.COLOR_RGB2BGR)
@@ -30,7 +30,7 @@ def prepareFiles(filelist):
     
     return filelist
 
-def load_data(filelist, validation_split=0.2):
+def load_data(filelist, validation_split=config.VALIDATION_SPLIT):
     """
     Load images from filelist and split into training and validation sets
     """
@@ -79,10 +79,29 @@ def load_data(filelist, validation_split=0.2):
     
     # Split the data
     X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=validation_split, random_state=42
+        X, y, test_size=validation_split, random_state=config.RANDOM_STATE
     )
     
     print(f"[INFO] Training set size: {len(X_train)}")
     print(f"[INFO] Validation set size: {len(X_val)}")
+    
+    return (X_train, y_train), (X_val, y_val)
+
+def main():
+    # Define the path to the dataset
+    dataset_path = config.DATASET_PATH
+    
+    # Get a list of all image files in the dataset
+    filelist = []
+    for root, dirs, files in os.walk(dataset_path):
+        for file in files:
+            if file.endswith(".jpg"):
+                filelist.append(os.path.join(root, file))
+    
+    # Prepare files for training
+    filelist = prepareFiles(filelist)
+    
+    # Load the data
+    (X_train, y_train), (X_val, y_val) = load_data(filelist)
     
     return (X_train, y_train), (X_val, y_val)
