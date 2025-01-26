@@ -18,3 +18,5 @@ output/
 photoDataset_aug/
 *.png
 *.png
+logs
+output4/*

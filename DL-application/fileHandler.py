@@ -1,19 +1,27 @@
 import os
 import glob
 import datetime
+from config import config
 
+# Get working directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)  # Go up one level
+output_dir = os.path.join(project_root, config.OUTPUT_DIRECTORY)
 
-def loadFiles(folderName):
+def loadFiles():
     """Load all dataset image files"""
 
-    # get the data path
-    __location__ = os.path.realpath(
-        os.path.join(os.getcwd(), os.path.dirname(__file__))
-    )
-    data_path = os.path.join(__location__, os.pardir, folderName)
+    # get the data path relative to script location
+    data_path = os.path.join(project_root, config.DATASET_ROOT_DIR)
+
+    # Show the script location
+    print(f"[INFO] Script location: {script_dir}")
+    
+    # Show the project root
+    print(f"[INFO] Project root: {project_root}")
 
     # grab the list of images in our data directory
-    print(f"[INFO] Loading images for {data_path}...")
+    print(f"[INFO] Loading images from {data_path}...")
     p = os.path.sep.join([data_path, "**", "*.png"])
 
     # Building the file list
@@ -21,53 +29,41 @@ def loadFiles(folderName):
 
     return fileList
 
-def countFiles(folderName):
+def countFiles():
     """Count all dataset image files"""
 
-    # get the data path
-    __location__ = os.path.realpath(
-        os.path.join(os.getcwd(), os.path.dirname(__file__))
-    )
-    data_path = os.path.join(__location__, os.pardir, folderName)
+    # get the data path relative to script location
+    data_path = os.path.join(project_root, config.DATASET_ROOT_DIR)
 
     # grab the list of images in our data directory
-    print(f"[INFO] Counting images for {data_path}...")
-    p = os.path.sep.join([data_path, "**", "*.png"])
+    print(f"[INFO] Counting images from {data_path}...")
+    p = os.path.sep.join([data_path, "*.png"])
 
     # Building the file list
-    fileList = [f for f in glob.iglob(p, recursive=True) if (os.path.isfile(f))]
+    fileList = [f for f in glob.iglob(p) if (os.path.isfile(f))]
 
     return len(fileList)
 
 def createOutputDir():
-    """Create timestamped output directory"""
-
-    # Check if output directory exists
-    outputDir = os.path.join(os.getcwd(), "output")
+    """Create output directory structure"""
+    
+    # Create base output directory relative to project root
+    outputDir = os.path.join(project_root, config.OUTPUT_DIRECTORY)
     if not os.path.exists(outputDir):
         os.makedirs(outputDir, exist_ok=True)
-    return outputDir
-
-def createTimestampDir(outputDir):
-    """Create timestamped output directory"""
-
+        
     # Create timestamped subdirectory
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     timestampDir = os.path.join(outputDir, timestamp)
     if not os.path.exists(timestampDir):
         os.makedirs(timestampDir, exist_ok=True)
         
-    return timestampDir
-
-def createSubDir(timestampDir, subDir):
-    """Create custom subdirectory in timestamped directory"""
-
-    # Create timestamped subdirectory
-    subDir = os.path.join(timestampDir, subDir)
-    if not os.path.exists(subDir):
-        os.makedirs(subDir, exist_ok=True)
+    # Create required subdirectories
+    os.makedirs(os.path.join(timestampDir, config.MODEL_DIR), exist_ok=True)
+    os.makedirs(os.path.join(timestampDir, config.HISTORY_DIR), exist_ok=True)
+    os.makedirs(os.path.join(timestampDir, config.LOGS_DIR), exist_ok=True)
         
-    return subDir
+    return timestampDir
 
 def createAugmentedDirs(baseDir):
     """Create augmented directories for rock, paper, and scissors"""
@@ -81,35 +77,12 @@ def createAugmentedDirs(baseDir):
     return augDirs
 
 if __name__ == "__main__":
-    
     # Create output directory
     outputDir = createOutputDir()
     
-    # Create timestamped subdirectory
-    timestampDir = createTimestampDir(outputDir)
-    
-    # Create custom subdirectory
-    subdir = "Test_Directory"
-    subDir = createSubDir(timestampDir, subdir)
-    
-    # Create augmented directories
-    baseDir = os.path.join(os.getcwd(), "photoDataset")
-    augDirs = createAugmentedDirs(baseDir)
-    
-    # Example usage of augDirs
-    for category, augDir in augDirs.items():
-        print(f"[INFO] Augmented directory for {category}: {augDir}")
+    # Example usage of output directories
+    print(f"[INFO] Created output directory structure at: {outputDir}")
     
     # Building the file list
     fileList = loadFiles()
-
-    count = 0
-    
-    for filename in fileList:
-
-        print("[INFO] Loading image: {}".format(filename))
-
-        # Count amount of files
-        count += 1
-
-    print("[INFO] Amount of images loaded:", count)
+    print(f"[INFO] Loaded {len(fileList)} files")

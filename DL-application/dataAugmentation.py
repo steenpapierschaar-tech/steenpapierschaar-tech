@@ -2,6 +2,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
+from config import config
 
 def display_augmented_samples(original_images, augmented_images, n_samples=5):
     """Display original images next to their augmented versions"""
@@ -36,7 +37,7 @@ def display_augmented_samples(original_images, augmented_images, n_samples=5):
     plt.tight_layout()
     plt.show()
 
-def augmentData(images, labels, target_size):
+def augmentData(images, labels, target_size=config.TARGET_AUGMENTATION_SIZE):
     """
     Augment the training data to reach target_size, ensuring balanced classes
     """
@@ -63,13 +64,13 @@ def augmentData(images, labels, target_size):
     
     # Initialize the ImageDataGenerator with moderate augmentation
     datagen = ImageDataGenerator(
-        rotation_range=40,     # Moderate rotation
-        width_shift_range=0.2, # Slight position shifts
-        height_shift_range=0.2,
-        shear_range=0.2,      # Moderate shear
-        zoom_range=0.2,       # Moderate zoom
-        horizontal_flip=True,  # Mirror images
-        fill_mode='nearest'    # Fill empty spaces
+        rotation_range=config.ROTATION_RANGE,
+        width_shift_range=config.SHIFT_RANGE,
+        height_shift_range=config.SHIFT_RANGE,
+        shear_range=config.SHEAR_RANGE,
+        zoom_range=config.ZOOM_RANGE,
+        horizontal_flip=config.HORIZONTAL_FLIP,
+        fill_mode=config.FILL_MODE
     )
     
     # Generate new images
