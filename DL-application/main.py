@@ -1,8 +1,8 @@
-from dataAugmentation import augmentData
-from fileHandler import loadFiles, createOutputDir
-from modelDesign import createModel
-from dataLoader import load_data, prepareFiles
-from config import config
+from archive.dataAugmentation import augmentData
+from archive.fileHandler import loadFiles, createOutputDir
+from archive.modelDesign import createModel
+from archive.dataLoader import load_data, prepareFiles
+from src.config import config
 import os
 import json
 import tensorflow as tf
@@ -56,15 +56,9 @@ def DeepLearning():
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.summary()
     
-    # Create output directory structure
-    outputDir = createOutputDir()
-    modelDir = os.path.join(outputDir, config.MODEL_DIR)
-    historyDir = os.path.join(outputDir, config.HISTORY_DIR)
-    logDir = os.path.join(outputDir, config.LOGS_DIR)
-    
-    # Add %tensorboard
+    # Use config paths directly
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir=logDir, 
+        log_dir=config.LOGS_PATH, 
         histogram_freq=config.TENSORBOARD_HISTOGRAM_FREQ
     )    
     
@@ -77,10 +71,10 @@ def DeepLearning():
         callbacks=[tensorboard_callback]
     )
     # Save the trained model
-    model.save(os.path.join(modelDir, config.TRAINED_MODEL_NAME))
+    model.save(config.TRAINED_MODEL_PATH)
     
     # Save training history
-    with open(os.path.join(historyDir, config.TRAINING_HISTORY_FILE), "w") as f:
+    with open(config.TRAINING_HISTORY_PATH, "w") as f:
         json.dump(history.history, f)
     
     # TODO: Parameter tuning using grid search or random search
@@ -102,5 +96,3 @@ def TranferLearning():
 if __name__ == "__main__":    
     DeepLearning()   
     #TranferLearning()
-
-   
