@@ -40,11 +40,13 @@ class Config:
         self.TENSORBOARD_HISTOGRAM_FREQ = 1
         self.TRAINED_MODEL_NAME = 'trained_model'
         self.TRAINING_HISTORY_FILE = 'training_history.json'
+        self.TUNER_DIR = 'hp_tuning'
         
         # Files
         self.BEST_HP_FILENAME = 'best_hyperparameters.txt'
         self.BEST_MODEL_FILENAME = 'model_best.keras'
         self.CHECKPOINT_MODEL_FILENAME = 'model_checkpoint.keras'
+        self.CSV_LOG_FILENAME = 'log.csv'
         
         # define paths
         self.OUTPUT_PATH = os.path.join(self.OUTPUT_DIRECTORY)
@@ -58,6 +60,24 @@ class Config:
         self.BEST_HP_PATH = os.path.join(self.OUTPUT_PATH, self.BEST_HP_FILENAME)
         self.BEST_MODEL_PATH = os.path.join(self.MODEL_PATH, self.BEST_MODEL_FILENAME)
         self.CHECKPOINT_MODEL_PATH = os.path.join(self.MODEL_PATH, self.CHECKPOINT_MODEL_FILENAME)
+        self.CSV_LOG_PATH = os.path.join(self.HISTORY_PATH, self.CSV_LOG_FILENAME)
+        self.TUNER_PATH = os.path.join(self.OUTPUT_PATH, self.TUNER_DIR)
+        
+        # Create all necessary directories
+        self._create_directories()
+    
+    def _create_directories(self):
+        """Create all necessary directories for the application"""
+        directories = [
+            self.OUTPUT_PATH,
+            self.MODEL_PATH,
+            self.HISTORY_PATH,
+            self.LOGS_PATH,
+            self.TUNER_PATH
+        ]
+        
+        for directory in directories:
+            os.makedirs(directory, exist_ok=True)
 
 # Create config instance
 config = Config()
