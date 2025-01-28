@@ -5,6 +5,30 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from collections import Counter
 from config import config
+import keras
+
+def create_dataset():
+    """
+    Use Keras API to create a dataset from the images
+    https://keras.io/api/data_loading/image/
+    """
+        
+    ds_train, ds_val = keras.utils.image_dataset_from_directory(
+        directory=config.DATASET_ROOT_DIR,
+        labels="inferred",      # Use directory names as labels
+        label_mode="categorical",
+        color_mode="rgb",
+        batch_size=config.BATCH_SIZE,
+        image_size=config.IMAGE_DIMS,
+        shuffle=True,
+        seed=config.RANDOM_STATE,
+        validation_split=config.VALIDATION_SPLIT,
+        subset="both",
+        interpolation="bilinear",
+        verbose=config.VERBOSE
+    )
+    
+    return ds_train, ds_val
 
 def prepareFiles(filelist):
     """
