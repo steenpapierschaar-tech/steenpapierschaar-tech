@@ -1,5 +1,5 @@
 import numpy as np
-from config import config
+from src.config import config
 import pathlib
 import PIL
 import PIL.Image

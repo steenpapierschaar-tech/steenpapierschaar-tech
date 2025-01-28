@@ -4,7 +4,7 @@ import os
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from collections import Counter
-from config import config
+from src.config import config
 import keras
 
 def create_dataset():
