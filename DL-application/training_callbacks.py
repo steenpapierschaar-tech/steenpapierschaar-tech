@@ -1,5 +1,6 @@
 import keras
 from config import config
+import os
 
 def ringring_callbackplease():
     callbacks = [
@@ -9,15 +10,16 @@ def ringring_callbackplease():
             verbose=config.VERBOSE,
             save_best_only=True,
             mode="auto",
-            save_freq="epoch"
+            save_freq="epoch",
             initial_value_threshold=0.4
         ),
         
         keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=6,
+            patience=8,
+            min_delta=0.01,
             verbose=config.VERBOSE,
-            restore_best_weights=True
+            restore_best_weights=True,
             start_from_epoch=10
         ),
         
@@ -31,14 +33,21 @@ def ringring_callbackplease():
 
         keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
-            factor=1e-2,
-            patience=3,
+            min_delta=0.01,
+            factor=0.2,
+            patience=4,
             verbose=config.VERBOSE,
-            min_delta=0.01
-        )
+        ),
+
+        keras.callbacks.CSVLogger(
+            filename=os.path.join(config.HISTORY_PATH, "log.csv"),
+            separator=',',
+            append=False
+        ),
         
-        keras.callbacks.LearningRateScheduler(
-            
+        keras.callbacks.TerminateOnNaN(),
+        
+        keras.callbacks.ProgbarLogger()
     ]
     
     return callbacks

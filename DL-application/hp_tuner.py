@@ -121,16 +121,12 @@ def main():
     # Load data using create_dataset
     train_ds, val_ds = create_dataset()
     
-    # Create output directory
-    outputDir = createOutputDir()
-    tuner_dir = os.path.join(config.OUTPUT_PATH, 'hp_tuning')
-    
     # Create tuner
     tuner = keras_tuner.BayesianOptimization(
         build_model,
         objective='val_loss',
         max_trials=50,
-        directory=tuner_dir,
+        directory=config.TUNER_PATH,
         project_name='rock_paper_scissors_tuning'
     )
     
