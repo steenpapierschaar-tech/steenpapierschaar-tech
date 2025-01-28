@@ -8,15 +8,15 @@ def ringring_callbackplease():
         keras.callbacks.ModelCheckpoint(
             config.MODEL_CHECKPOINT_PATH,
             monitor="val_loss",
-            verbose=config.VERBOSE,
+            verbose=0,
             save_best_only=True,
             mode="auto",
             save_freq="epoch",
-            initial_value_threshold=0.5,
+            initial_value_threshold=0.8,
         ),
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=8,
+            patience=6,
             min_delta=0.01,
             verbose=config.VERBOSE,
             restore_best_weights=True,
@@ -24,9 +24,11 @@ def ringring_callbackplease():
         ),
         keras.callbacks.TensorBoard(
             log_dir=config.LOGS_DIR,
-            histogram_freq=config.TENSORBOARD_HISTOGRAM_FREQ,
-            write_graph=True,
-            write_images=True,
+            #histogram_freq=config.TENSORBOARD_HISTOGRAM_FREQ,
+            write_steps_per_second=True,
+            #write_graph=True,
+            #write_images=True,
+            profile_batch=(2, 2),
             update_freq=config.TENSORBOARD_UPDATE_FREQ,
         ),
         keras.callbacks.ReduceLROnPlateau(

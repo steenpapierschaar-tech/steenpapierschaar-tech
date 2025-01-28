@@ -15,7 +15,7 @@ def build_model(hp):
     # Preprocessing
     x = keras.layers.AutoContrast()(inputs)
     x = keras.layers.Resizing(config.TARGET_SIZE[0], config.TARGET_SIZE[1])(x)
-    
+
     # Augmentation
     x = keras.layers.RandAugment(seed=config.RANDOM_STATE)(x)
     x = keras.layers.Rescaling(1.0 / 255)(x)
@@ -30,16 +30,18 @@ def build_model(hp):
         x = keras.layers.BatchNormalization()(x)
 
     # Convolutional layers
-    n_conv_layers = hp.Int("Amount of convolutional layers", min_value=1, max_value=4, default=1)
-    
+    n_conv_layers = hp.Int(
+        "Amount of convolutional layers", min_value=1, max_value=4, default=1
+    )
+
     for i in range(n_conv_layers):
         # Conv layer hyperparameters
         filters = hp.Int(
-            f"Layer {i}: Amount of filters", 
-            min_value=32, 
-            max_value=256, 
-            step=32, 
-            default=32
+            f"Layer {i}: Amount of filters",
+            min_value=32,
+            max_value=256,
+            step=32,
+            default=32,
         )
         activation_function = hp.Choice(
             f"Layer {i}: Activation function",
@@ -47,72 +49,69 @@ def build_model(hp):
             default="relu",
         )
         dropout_rate = hp.Float(
-            f"Layer {i}: dropout rate", 
-            min_value=0.0, 
-            max_value=0.5, 
-            step=0.1, 
-            default=0.0
+            f"Layer {i}: dropout rate",
+            min_value=0.0,
+            max_value=0.5,
+            step=0.1,
+            default=0.0,
         )
         kernel_size = hp.Choice(f"Layer {i}: kernel size", [3, 5, 7], default=3)
-        
+
         # Regularizer hyperparameters
         conv_reg_type = hp.Choice(
             f"Conv Layer {i}: Regularizer type",
             ["none", "l1", "l2", "l1_l2"],
-            default="none"
+            default="none",
         )
         conv_reg_factor = hp.Float(
             f"Conv Layer {i}: Regularizer factor",
             min_value=1e-5,
             max_value=1e-2,
             sampling="log",
-            default=1e-4
+            default=1e-4,
         )
-        
+
         # Create regularizer
         if conv_reg_type == "l1":
             conv_regularizer = keras.regularizers.L1(conv_reg_factor)
         elif conv_reg_type == "l2":
             conv_regularizer = keras.regularizers.L2(conv_reg_factor)
         elif conv_reg_type == "l1_l2":
-            conv_regularizer = keras.regularizers.L1L2(l1=conv_reg_factor, l2=conv_reg_factor)
+            conv_regularizer = keras.regularizers.L1L2(
+                l1=conv_reg_factor, l2=conv_reg_factor
+            )
         else:
             conv_regularizer = None
 
         # Layer construction
         if hp.Boolean(f"Layer {i}: Use batch normalization"):
             x = keras.layers.BatchNormalization()(x)
-            
+
         x = keras.layers.Conv2D(
-            filters, 
-            kernel_size, 
-            padding="same",
-            kernel_regularizer=conv_regularizer
+            filters, kernel_size, padding="same", kernel_regularizer=conv_regularizer
         )(x)
         x = keras.layers.Activation(activation_function)(x)
-        
+
         pool_type = hp.Choice(f"pool_{i}", ["max", "avg"])
         if pool_type == "max":
             x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
         else:
             x = keras.layers.AveragePooling2D(pool_size=(2, 2))(x)
-        
+
         x = keras.layers.Dropout(dropout_rate)(x)
 
     # Flatten
     x = keras.layers.Flatten()(x)
 
     # Dense layers
-    n_dense_layers = hp.Int("Amount of dense layers", min_value=1, max_value=3, default=1)
-    
+    n_dense_layers = hp.Int(
+        "Amount of dense layers", min_value=1, max_value=3, default=1
+    )
+
     for i in range(n_dense_layers):
         # Dense layer hyperparameters
         units = hp.Int(
-            f"Dense layer {i}: Units", 
-            min_value=32, 
-            max_value=512, 
-            step=64, 
-            default=32
+            f"Dense layer {i}: Units", min_value=32, max_value=512, step=64, default=32
         )
         dropout_rate = hp.Float(
             f"Dense layer {i}: dropout rate",
@@ -126,41 +125,40 @@ def build_model(hp):
             ["relu", "selu", "leaky_relu"],
             default="relu",
         )
-        
+
         # Regularizer hyperparameters
         dense_reg_type = hp.Choice(
             f"Dense Layer {i}: Regularizer type",
             ["none", "l1", "l2", "l1_l2"],
-            default="none"
+            default="none",
         )
         dense_reg_factor = hp.Float(
             f"Dense Layer {i}: Regularizer factor",
             min_value=1e-5,
             max_value=1e-2,
             sampling="log",
-            default=1e-4
+            default=1e-4,
         )
-        
+
         # Create regularizer
         if dense_reg_type == "l1":
             dense_regularizer = keras.regularizers.L1(dense_reg_factor)
         elif dense_reg_type == "l2":
             dense_regularizer = keras.regularizers.L2(dense_reg_factor)
         elif dense_reg_type == "l1_l2":
-            dense_regularizer = keras.regularizers.L1L2(l1=dense_reg_factor, l2=dense_reg_factor)
+            dense_regularizer = keras.regularizers.L1L2(
+                l1=dense_reg_factor, l2=dense_reg_factor
+            )
         else:
             dense_regularizer = None
 
         # Layer construction
-        x = keras.layers.Dense(
-            units,
-            kernel_regularizer=dense_regularizer
-        )(x)
+        x = keras.layers.Dense(units, kernel_regularizer=dense_regularizer)(x)
         x = keras.layers.Activation(activation_function)(x)
-        
+
         if hp.Boolean(f"Dense layer {i}: Use batch normalization"):
             x = keras.layers.BatchNormalization()(x)
-            
+
         x = keras.layers.Dropout(dropout_rate)(x)
 
     # Output layer
@@ -169,11 +167,9 @@ def build_model(hp):
 
     # Optimizer
     optimizer_choice = hp.Choice(
-        "optimizer",
-        ["adam", "rmsprop", "sgd", "AdamW"],
-        default="adam"
+        "optimizer", ["adam", "rmsprop", "sgd", "AdamW"], default="adam"
     )
-    
+
     learning_rate = hp.Float("lr", 1e-5, 1e-2, sampling="log")
 
     if optimizer_choice == "adam":
@@ -196,8 +192,11 @@ def build_model(hp):
 
 def main():
     # Allow mixed precision
-    keras.mixed_precision.set_global_policy('mixed_float16')
-    
+    keras.mixed_precision.set_global_policy("mixed_float16")
+
+    # Clear session and memory
+    keras.utils.clear_session(free_memory=True)
+
     # Load data
     train_ds, val_ds = create_dataset()
 

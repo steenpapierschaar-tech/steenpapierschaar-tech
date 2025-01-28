@@ -16,7 +16,7 @@ class Config:
         
         # Training
         self.EPOCHS = 50
-        self.BATCH_SIZE = 8
+        self.BATCH_SIZE = 32
         self.TARGET_AUGMENTATION_SIZE = 1500
         self.TARGET_SIZE = (128, 96)
         self.MAX_TRIALS = 1000
