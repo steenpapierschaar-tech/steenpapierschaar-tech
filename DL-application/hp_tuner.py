@@ -1,10 +1,9 @@
 import keras
 import keras_tuner
-import os
-from config import config
-from fileHandler import createOutputDir
-from dataLoader import create_dataset
-from training_callbacks import ringring_callbackplease
+from src.config import config
+from src.create_dataset import create_dataset
+from src.training_callbacks import ringring_callbackplease
+from src.tensorboard import TensorboardLauncher
 
 def build_model(hp):
     """Build CNN model with tunable hyperparameters"""
@@ -85,9 +84,9 @@ def build_model(hp):
     n_dense_layers = hp.Int("Amount of dense layers", min_value=1, max_value=3)
     
     for i in range(n_dense_layers):
-        units = hp.Int(f"Dense layer {i}: Units", min_value=32, max_value=512, step=32)
-        dropout_rate = hp.Float(f"Dense layer {i}: dropout rate", min_value=0.0, max_value=0.5, step=0.1)
-        activation_function = hp.Choice(f"Dense layer {i}: Activation function", ["relu", "selu"], default="relu")
+        units = hp.Int(f"Dense layer {i}: Units", min_value=32, max_value=512, step=32, default=32)
+        dropout_rate = hp.Float(f"Dense layer {i}: dropout rate", min_value=0.0, max_value=0.5, step=0.1, default=0.1)
+        activation_function = hp.Choice(f"Dense layer {i}: Activation function", ["relu", "selu", "leaky_relu"], default="relu")
         
         x = keras.layers.Dense(units)(x)
         x = keras.layers.Activation(activation_function)(x)
@@ -101,18 +100,31 @@ def build_model(hp):
     model = keras.Model(inputs=inputs, outputs=outputs)
     
     # Compile model
-    optimizer_choice = hp.Choice("optimizer", ["adam", "rmsprop", "sgd"])
+    optimizer_choice = hp.Choice("optimizer", ["adam", "rmsprop", "sgd", "AdamW"])
+    learning_rate = 0.01  # Fixed initial learning rate, ReduceLROnPlateau will handle decreases
+    
     if optimizer_choice == "adam":
-        optimizer = keras.optimizers.Adam(learning_rate=0.01)
+        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
     elif optimizer_choice == "rmsprop":
-        optimizer = keras.optimizers.RMSprop(learning_rate=0.01)
+        optimizer = keras.optimizers.RMSprop(learning_rate=learning_rate)
     else:
-        optimizer = keras.optimizers.SGD(learning_rate=0.01)
+        optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
     
     model.compile(
         optimizer=optimizer,
         loss="categorical_crossentropy",
-        metrics=["accuracy"]
+        metrics=[
+            keras.metrics.CategoricalAccuracy(),
+            keras.metrics.CategoricalCrossentropy(),
+            keras.metrics.TruePositives(),
+            keras.metrics.TrueNegatives(),
+            keras.metrics.FalsePositives(),
+            keras.metrics.FalseNegatives(),
+            keras.metrics.Precision(),
+            keras.metrics.Recall(),
+            keras.metrics.AUC(),
+            keras.metrics.F1Score(),
+            ]
     )
     
     return model
@@ -121,13 +133,16 @@ def main():
     # Load data using create_dataset
     train_ds, val_ds = create_dataset()
     
+    # Initialize TensorBoard
+    tensorboard = TensorboardLauncher(config.LOGS_DIR)
+    tensorboard.start_tensorboard()
+    
     # Create tuner
     tuner = keras_tuner.BayesianOptimization(
         build_model,
         objective='val_loss',
-        max_trials=50,
-        directory=config.TUNER_PATH,
-        project_name='rock_paper_scissors_tuning'
+        max_trials=config.MAX_TRIALS,
+        directory=config.OUTPUT_DIR,
     )
     
     # Start the search
@@ -154,6 +169,7 @@ def main():
         epochs=config.EPOCHS,
         callbacks=ringring_callbackplease()
     )
+    
     best_model.save(config.BEST_MODEL_PATH)
 
 if __name__ == "__main__":
