@@ -4,6 +4,7 @@ from src.config import config
 from src.create_dataset import create_dataset
 from src.training_callbacks import ringring_callbackplease
 from src.tensorboard import TensorboardLauncher
+from src.augmentation import apply_augmentation
 
 
 def build_model(hp):
@@ -12,12 +13,10 @@ def build_model(hp):
     # Input layer
     inputs = keras.Input(shape=(None, None, 3))
 
-    # Preprocessing
-    x = keras.layers.AutoContrast()(inputs)
-    x = keras.layers.Resizing(config.TARGET_SIZE[0], config.TARGET_SIZE[1])(x)
+    # Apply augmentation pipeline
+    x = apply_augmentation(inputs)
 
-    # Augmentation
-    x = keras.layers.RandAugment(seed=config.RANDOM_STATE)(x)
+    # Rescale pixel values
     x = keras.layers.Rescaling(1.0 / 255)(x)
 
     # Normalization
@@ -193,6 +192,9 @@ def build_model(hp):
 def main():
     # Allow mixed precision
     keras.mixed_precision.set_global_policy("mixed_float16")
+
+    # Set global random seed
+    keras.utils.set_random_seed(config.RANDOM_STATE)
 
     # Clear session and memory
     keras.utils.clear_session(free_memory=True)
