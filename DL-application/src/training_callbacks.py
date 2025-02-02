@@ -28,16 +28,16 @@ def ringring_callbackplease():
             write_steps_per_second=True,
             #write_graph=True,
             #write_images=True,
-            profile_batch=(2, 2),
+            #profile_batch=(2, 2),
             update_freq=config.TENSORBOARD_UPDATE_FREQ,
         ),
         keras.callbacks.ReduceLROnPlateau(
             monitor="val_loss",
-            min_delta=0.01,
+            min_delta=0.1,
             factor=0.1,
-            patience=4,
+            patience=3,
             verbose=config.VERBOSE,
-            min_lr=0.00001,
+            min_lr=0.000001,
         ),
         keras.callbacks.CSVLogger(
             filename=config.CSV_LOG_PATH, separator=",", append=False
