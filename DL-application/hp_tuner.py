@@ -169,7 +169,7 @@ def build_model(hp):
         "optimizer", ["adam", "rmsprop", "sgd", "AdamW"], default="adam"
     )
 
-    learning_rate = hp.Float("lr", 1e-5, 1e-2, sampling="log")
+    learning_rate = 0.001
 
     if optimizer_choice == "adam":
         optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
