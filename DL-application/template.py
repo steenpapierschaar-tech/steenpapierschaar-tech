@@ -21,26 +21,57 @@ def build_model():
     # Normalization (default: "standard")
     x = keras.layers.Normalization()(x)
 
-    # Layer construction
-    x = keras.layers.Conv2D(filters=64, kernel_size=3)(x)
-    x = keras.layers.Activation(activation="relu")(x)
+    # Layer 0: Conv
+    x = keras.layers.Conv2D(32, (3, 3), activation='gelu', padding='same',
+                            kernel_regularizer=keras.regularizers.l2(0.0018481))(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.Dropout(0.2)(x)
     x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
-    x = keras.layers.Dropout(rate=0.1)(x)
 
-    # Flatten
+    # Layer 1: Conv
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same',
+                            kernel_regularizer=keras.regularizers.l2(0.0079166))(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.AveragePooling2D(pool_size=(4, 4))(x)
+
+    # Layer 2: Conv
+    x = keras.layers.Conv2D(256, (3, 3), activation='leaky_relu', padding='same',
+                            kernel_regularizer=keras.regularizers.l2(0.0058566))(x)
+    x = keras.layers.Dropout(0.1)(x)
+    x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+
+    # Layer 3: Conv
+    x = keras.layers.Conv2D(256, (3, 3), activation='tanh', padding='same',
+                            kernel_regularizer=keras.regularizers.l1(0.00015597))(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.Dropout(0.4)(x)
+    x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+
+    # Flatten before Dense layers
     x = keras.layers.Flatten()(x)
 
-    # Dense layers
-    x = keras.layers.Dense(units=64)(x)
-    x = keras.layers.Activation(activation="relu")(x)
-    x = keras.layers.Dropout(rate=0.1)(x)
+    # Dense Layer 0
+    x = keras.layers.Dense(32, activation='relu',
+                           kernel_regularizer=keras.regularizers.l1(6.6062e-05))(x)
+    x = keras.layers.Dropout(0.1)(x)
+
+    # Dense Layer 1
+    x = keras.layers.Dense(288, activation='leaky_relu',
+                           kernel_regularizer=keras.regularizers.l1_l2(0.00010264))(x)
+    x = keras.layers.Dropout(0.2)(x)
+
+    # Dense Layer 2
+    x = keras.layers.Dense(160, activation='leaky_relu',
+                           kernel_regularizer=keras.regularizers.l1(0.00013522))(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.Dropout(0.1)(x)
 
     # Output layer
     outputs = keras.layers.Dense(3, activation="softmax")(x)
     model = keras.Model(inputs=inputs, outputs=outputs)
 
     # Optimizer (default: "adam" with lr=0.001)
-    optimizer = keras.optimizers.Adam(learning_rate=0.001)
+    optimizer = keras.optimizers.AdamW(learning_rate=0.01)
 
     model.compile(
         optimizer=optimizer,

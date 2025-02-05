@@ -11,25 +11,27 @@ class Config:
         
         # Data Loading
         self.IMAGE_DIMS = (240, 320)
+        self.IMAGE_ROWS = self.IMAGE_DIMS[0]
+        self.IMAGE_COLS = self.IMAGE_DIMS[1]
         self.VALIDATION_SPLIT = 0.2
         self.RANDOM_STATE = 42
         
         # Augmentation
-        self.RANDOM_BRIGHTNESS = 0.2
-        self.RANDOM_CONTRAST = 0.2
-        self.RANDOM_SATURATION = 0.2
-        self.RANDOM_HUE = 0.2
-        self.RANDOM_CROP = 0.2
+        self.RANDOM_BRIGHTNESS = 0.1
+        self.RANDOM_CONTRAST = 0.1
+        self.RANDOM_SATURATION = 0.1
+        self.RANDOM_HUE = 0.1
+        self.RANDOM_CROP = 0.1
         self.RANDOM_FLIP = "horizontal_and_vertical"
-        self.RANDOM_SHARPNESS = 0.2
-        self.RANDOM_SHEAR_X = 0.2
-        self.RANDOM_SHEAR_Y = 0.2
-        self.RANDOM_TRANSLATION = 0.2
-        self.RANDOM_ZOOM = 0.2
-        self.RANDOM_ROTATION = 0.2
+        self.RANDOM_SHARPNESS = 0.1
+        self.RANDOM_SHEAR_X = 0.1
+        self.RANDOM_SHEAR_Y = 0.1
+        self.RANDOM_TRANSLATION = 0.1
+        self.RANDOM_ZOOM = 0.1
+        self.RANDOM_ROTATION = 0.1
 
         # Training
-        self.EPOCHS = 50
+        self.EPOCHS = 10
         self.BATCH_SIZE = 32
         self.TARGET_AUGMENTATION_SIZE = 1500
         self.TARGET_SIZE = (96, 128)
@@ -46,7 +48,7 @@ class Config:
 
         # Define directories
         self.OUTPUT_DIRECTORY       = 'output'
-        self.OUTPUT_DIR             = os.path.join(self.OUTPUT_DIRECTORY, self.TIMESTAMP)
+        self.OUTPUT_DIR             = os.path.join(self.OUTPUT_DIRECTORY)
         self.MODEL_DIR              = os.path.join(self.OUTPUT_DIR, 'model')
         self.HISTORY_DIR            = os.path.join(self.OUTPUT_DIR, 'history')
         self.LOGS_DIR               = os.path.join(self.OUTPUT_DIR, 'logs')
