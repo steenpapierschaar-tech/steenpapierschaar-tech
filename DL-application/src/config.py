@@ -20,8 +20,8 @@ class Config:
         # Augmentation
         self.RANDOM_BRIGHTNESS = 0.1
         self.RANDOM_CONTRAST = 0.1
-        self.RANDOM_SATURATION = 0.1
-        self.RANDOM_HUE = 0.1
+        self.RANDOM_SATURATION = 1.0
+        self.RANDOM_HUE = 1.0
         self.RANDOM_CROP = 0.1
         self.RANDOM_FLIP = "horizontal_and_vertical"
         self.RANDOM_SHARPNESS = 0.1

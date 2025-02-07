@@ -66,11 +66,11 @@ def apply_augmentation(inputs):
     # 3. Color augmentations
     # Randomly adjust color properties while maintaining natural look
     x = keras.layers.RandomColorJitter(
-        value_range=(0, 255),  # Input image range
-        brightness_factor=config.RANDOM_BRIGHTNESS,  # ±20% brightness
-        contrast_factor=config.RANDOM_CONTRAST,      # ±20% contrast
-        saturation_factor=config.RANDOM_SATURATION,  # ±20% saturation
-        hue_factor=config.RANDOM_HUE,               # ±20% hue
+        value_range=(0, 255),
+        brightness_factor=config.RANDOM_BRIGHTNESS,
+        contrast_factor=config.RANDOM_CONTRAST,
+        saturation_factor=config.RANDOM_SATURATION,
+        hue_factor=config.RANDOM_HUE,
     )(x)
     
     # Randomly adjust image sharpness
