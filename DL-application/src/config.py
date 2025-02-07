@@ -10,7 +10,7 @@ class Config:
         self.TIMESTAMP = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         
         # Data Loading
-        self.IMAGE_DIMS = (48, 64)
+        self.IMAGE_DIMS = (240, 320)
         self.IMAGE_ROWS = self.IMAGE_DIMS[0]
         self.IMAGE_COLS = self.IMAGE_DIMS[1]
         self.VALIDATION_SPLIT = 0.2
@@ -31,16 +31,17 @@ class Config:
         self.RANDOM_ROTATION = 0.1
 
         # Training
-        self.EPOCHS = 25
+        self.EPOCHS = 10
         self.BATCH_SIZE = 32
         self.TARGET_AUGMENTATION_SIZE = 1500
-        self.TARGET_SIZE = (48, 64)
+        self.TARGET_SIZE = (96, 128)
         self.MAX_TRIALS = 1000
         self.MAX_EPOCH_SECONDS = 10
         
         # Input
-        self.DATASET_ROOT_DIR = '../photoDataset'
+        self.DATASET_ROOT_DIR = 'photoDataset'
         self.INPUT_DIRECTORY = 'input'
+        self.DATASET_EXTERNAL_DIR = 'photoDataset_external'
 
         # Tensorboard
         self.TENSORBOARD_PORT = 6006
