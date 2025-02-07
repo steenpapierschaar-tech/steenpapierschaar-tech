@@ -1,6 +1,27 @@
 import keras
 from src.config import config
 import os
+import time
+
+class TimeoutCallback(keras.callbacks.Callback):
+    def __init__(self, max_epoch_seconds):
+        super().__init__()
+        self.max_epoch_seconds = max_epoch_seconds
+        self.current_epoch = 0
+        
+    def on_epoch_begin(self, epoch, logs=None):
+        self.current_epoch = epoch
+        self.epoch_start_time = time.time()
+        
+    def on_batch_end(self, batch, logs=None):
+        # Skip monitoring first epoch (epoch 0)
+        if self.current_epoch == 0:
+            return
+            
+        elapsed_seconds = time.time() - self.epoch_start_time
+        if elapsed_seconds > self.max_epoch_seconds:
+            print(f"\nStopping training: Epoch {self.current_epoch} took {elapsed_seconds:.2f} seconds (limit: {self.max_epoch_seconds} seconds)")
+            self.model.stop_training = True
 
 def ringring_callbackplease():
     """Create a list of callbacks for model training.
@@ -12,6 +33,7 @@ def ringring_callbackplease():
     - ReduceLROnPlateau: Adjust learning rate when training plateaus
     - CSVLogger: Save training history to CSV file
     - TerminateOnNaN: Stop training if loss becomes NaN
+    - TimeoutCallback: Stop training if epoch exceeds time limit
     
     Returns:
         list: List of Keras callback objects
@@ -27,16 +49,13 @@ def ringring_callbackplease():
         #     save_freq="epoch",
         # ),
         
-        # # Stop training when validation metrics plateau
-        # keras.callbacks.EarlyStopping(
-        #     monitor="val_accuracy",
-        #     patience=10,  # More patience to allow learning rate adjustments
-        #     min_delta=0.01,
-        #     verbose=config.VERBOSE,
-        #     restore_best_weights=True,
-        #     mode="max",
-        #     start_from_epoch=5,  # Allow initial learning
-        # ),
+        # Stop training when validation metrics plateau
+        keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            patience=4,
+            min_delta=0.05,
+            verbose=config.VERBOSE,
+        ),
         
         # Visualize training progress
         keras.callbacks.TensorBoard(
@@ -68,6 +87,9 @@ def ringring_callbackplease():
         
         # # Stop training if NaN loss occurs
         # keras.callbacks.TerminateOnNaN(),
+        
+        # Stop training if epoch exceeds time limit (5 minutes default)
+        TimeoutCallback(max_epoch_seconds=config.MAX_EPOCH_SECONDS),
     ]
 
     return callbacks
