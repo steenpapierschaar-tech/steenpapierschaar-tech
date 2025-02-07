@@ -2,6 +2,7 @@ import keras
 from src.config import config
 import os
 import time
+import gc
 
 class TimeoutCallback(keras.callbacks.Callback):
     def __init__(self, max_epoch_seconds):
@@ -22,6 +23,12 @@ class TimeoutCallback(keras.callbacks.Callback):
         if elapsed_seconds > self.max_epoch_seconds:
             print(f"\nStopping training: Epoch {self.current_epoch} took {elapsed_seconds:.2f} seconds (limit: {self.max_epoch_seconds} seconds)")
             self.model.stop_training = True
+
+class MemoryCleanupCallback(keras.callbacks.Callback):
+    def on_trial_end(self, logs=None):
+        """Clear memory after each epoch"""
+        gc.collect()  # Python garbage collection
+        keras.utils.clear_session(free_memory=True)
 
 def ringring_callbackplease():
     """Create a list of callbacks for model training.
@@ -90,6 +97,9 @@ def ringring_callbackplease():
         
         # Stop training if epoch exceeds time limit (5 minutes default)
         TimeoutCallback(max_epoch_seconds=config.MAX_EPOCH_SECONDS),
+        
+        # Clear memory after each trial
+        MemoryCleanupCallback(),
     ]
 
     return callbacks
