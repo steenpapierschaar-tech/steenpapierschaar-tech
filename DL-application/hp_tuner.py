@@ -43,7 +43,7 @@ def build_model(hp):
     # Normalization Layer
     #--------------------
     normalization_strategy = hp.Choice(
-        "Normalization Architecture",
+        "Normalization Type",
         ["standard", "layer", "batch", "none"],
         default="batch"
     )
@@ -58,35 +58,35 @@ def build_model(hp):
     # Convolutional Layers
     #--------------------
     architecture_depth = hp.Int(
-        "Network Architecture Depth",
+        "Number of Convolutional Layers",
         min_value=1,
-        max_value=6,
+        max_value=3,
         default=1
     )
 
     for i in range(architecture_depth):
         # Conv layer hyperparameters with GPU-optimized ranges
         feature_extractors = hp.Int(
-            f"ConvBlock {i+1}: Feature Extractors",
+            f"ConvBlock {i+1}: Filters",
             min_value=32,    # Minimum for feature detection
             max_value=256,   # Maximum before diminishing returns
             step=32,         # Power of 2 for GPU optimization
             default=32
         )
         activation_function = hp.Choice(
-            f"ConvBlock {i+1}: Neural Activation",
+            f"ConvBlock {i+1}: Activation Function",
             ["relu", "leaky_relu", "selu", "tanh", "gelu"],
             default="relu"
         )
         regularization_factor = hp.Float(
-            f"ConvBlock {i+1}: Dropout Shield",
+            f"ConvBlock {i+1}: Dropout Rate",
             min_value=0.0,
             max_value=0.5,
             step=0.1,
             default=0.0
         )
         perception_field = hp.Choice(
-            f"ConvBlock {i+1}: Receptive Field Size",
+            f"ConvBlock {i+1}: Kernel Size",
             [3, 5, 7],
             default=3
         )
@@ -98,7 +98,7 @@ def build_model(hp):
             default="none"
         )
         regularization_strength = hp.Float(
-            f"ConvBlock {i+1}: Regularization Intensity",
+            f"ConvBlock {i+1}: Regularization Strength",
             min_value=1e-5,
             max_value=1e-2,
             sampling="log",
@@ -149,7 +149,7 @@ def build_model(hp):
     x = keras.layers.Flatten()(x)
 
     classifier_depth = hp.Int(
-        "Classifier Architecture Depth",
+        "Number of Dense Layers",
         min_value=1,
         max_value=2,
         default=1
@@ -158,21 +158,21 @@ def build_model(hp):
     for i in range(classifier_depth):
         # Dense layer hyperparameters
         neuron_count = hp.Int(
-            f"DenseBlock {i+1}: Neuron Population",
+            f"DenseBlock {i+1}: Units",
             min_value=32,
             max_value=512,
             step=64,
             default=32
         )
         regularization_factor = hp.Float(
-            f"DenseBlock {i+1}: Dropout Shield",
+            f"DenseBlock {i+1}: Dropout Rate",
             min_value=0.0,
             max_value=0.5,
             step=0.1,
             default=0.0
         )
         activation_function = hp.Choice(
-            f"DenseBlock {i+1}: Neural Activation",
+            f"DenseBlock {i+1}: Activation Function",
             ["relu", "selu", "leaky_relu"],
             default="relu"
         )
@@ -184,7 +184,7 @@ def build_model(hp):
             default="none"
         )
         regularization_strength = hp.Float(
-            f"DenseBlock {i+1}: Regularization Intensity",
+            f"DenseBlock {i+1}: Regularization Strength",
             min_value=1e-5,
             max_value=1e-2,
             sampling="log",
@@ -220,7 +220,7 @@ def build_model(hp):
     # Learning Rate Configuration
     #--------------------
     learning_strategy = hp.Choice(
-        "Learning Rate Strategy",
+        "Learning Rate Schedule Type",
         ["constant", "step", "exponential", "polynomial", "cosine"],
         default="constant"
     )
@@ -239,25 +239,20 @@ def build_model(hp):
         learning_rate = initial_learning_rate
     elif learning_strategy == "step":
         decay_factor = hp.Float(
-            "Learning Rate Decay Factor",
+            "Decay Rate",
             min_value=0.1,
             max_value=0.5,
             default=0.1
         )
-        decay_steps = hp.Int(
-            "Steps Between Rate Decay",
-            min_value=1,
-            max_value=5,
-            default=3
-        )
-        learning_rate = keras.optimizers.schedules.StepSchedule(
+        learning_rate = keras.optimizers.schedules.InverseTimeDecay(
             initial_learning_rate=initial_learning_rate,
             decay_rate=decay_factor,
-            step_size=decay_steps
+            decay_steps=1,
+            staircase=True
         )
     elif learning_strategy == "exponential":
         decay_rate = hp.Float(
-            "Exponential Decay Rate",
+            "Decay Rate",
             min_value=0.8,
             max_value=0.99,
             default=0.9
@@ -276,7 +271,7 @@ def build_model(hp):
             default=1e-6
         )
         decay_power = hp.Float(
-            "Polynomial Decay Power",
+            "Decay Power",
             min_value=1.0,
             max_value=3.0,
             default=1.0
@@ -289,7 +284,7 @@ def build_model(hp):
         )
     else:  # cosine
         min_learning_rate = hp.Float(
-            "Minimum Learning Rate Ratio",
+            "Minimum Learning Rate",
             min_value=0.0,
             max_value=0.2,
             default=0.0
@@ -309,7 +304,7 @@ def build_model(hp):
 
     # Optimizer selection and configuration
     optimization_strategy = hp.Choice(
-        "Neural Network Optimizer",
+        "Optimizer Type",
         ["Adam", "RMSprop", "SGD", "AdamW"],
         default="Adam"
     )
