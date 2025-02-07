@@ -36,36 +36,52 @@ def main():
     tensorboard = TensorboardLauncher(config.LOGS_DIR)
     tensorboard.start_tensorboard()
     
-    # Create training dataset from directory of images
-    # - Images are automatically loaded and preprocessed
-    # - Directory structure determines class labels
-    # - validation_split creates a training subset
-    train_ds = ak.image_dataset_from_directory(
-      directory=config.DATASET_ROOT_DIR,
-      batch_size=config.BATCH_SIZE,
-      image_size=(config.IMAGE_DIMS[0], config.IMAGE_DIMS[1]),
-      shuffle=True,
-      validation_split=config.VALIDATION_SPLIT,
-      subset="training",
-      seed=config.RANDOM_STATE,
-    )
+    # Create training and validation datasets
+    # If EXTERNAL_DATASET_USAGE is True, use separate directories
+    # If False, split single directory using validation_split
+    if config.EXTERNAL_DATASET_USAGE:
+        # Create training dataset from main directory
+        train_ds = ak.image_dataset_from_directory(
+            directory=config.DATASET_ROOT_DIR,
+            batch_size=config.BATCH_SIZE,
+            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
+            shuffle=True,
+            seed=config.RANDOM_STATE,
+        )
 
-    # Create validation dataset from the same directory
-    # - Uses the remaining portion from validation_split
-    # - Same preprocessing as training dataset
-    # - Used to evaluate model performance during training
-    val_ds = ak.image_dataset_from_directory(
-      directory=config.DATASET_ROOT_DIR,
-      batch_size=config.BATCH_SIZE,
-      image_size=(config.IMAGE_DIMS[0], config.IMAGE_DIMS[1]),
-      shuffle=True,
-      validation_split=config.VALIDATION_SPLIT,
-      seed=config.RANDOM_STATE,
-      subset="validation",
-    )
+        # Create validation dataset from external directory
+        val_ds = ak.image_dataset_from_directory(
+            directory=config.DATASET_EXTERNAL_DIR,
+            batch_size=config.BATCH_SIZE,
+            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
+            shuffle=True,
+            seed=config.RANDOM_STATE,
+        )
+    else:
+        # Create training dataset with validation split
+        train_ds = ak.image_dataset_from_directory(
+            directory=config.DATASET_ROOT_DIR,
+            validation_split=config.VALIDATION_SPLIT,
+            subset='training',
+            batch_size=config.BATCH_SIZE,
+            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
+            shuffle=True,
+            seed=config.RANDOM_STATE,
+        )
+
+        # Create validation dataset from the same split
+        val_ds = ak.image_dataset_from_directory(
+            directory=config.DATASET_ROOT_DIR,
+            validation_split=config.VALIDATION_SPLIT,
+            subset='validation',
+            batch_size=config.BATCH_SIZE,
+            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
+            shuffle=True,
+            seed=config.RANDOM_STATE,
+        )
 
     # Define model architecture using AutoKeras building blocks
-    
+
     # Input layer: Handles image input with automatic shape inference
     input = ak.ImageInput()
 
@@ -85,11 +101,11 @@ def main():
     # AutoKeras will search for optimal CNN architecture
     # May include multiple conv layers, pooling, dropout, etc.
     convblock = ak.ConvBlock()(augment)
-    
+
     # Classification head: Final layers for classification
     # Automatically adjusts to number of classes in dataset
     head = ak.ClassificationHead()(convblock)
-    
+
     # Create AutoModel for architecture search
     # - Tries different architectures within the defined structure
     # - Keeps track of best performing models
