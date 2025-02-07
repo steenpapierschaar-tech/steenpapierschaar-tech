@@ -36,6 +36,7 @@ class Config:
         self.TARGET_AUGMENTATION_SIZE = 1500
         self.TARGET_SIZE = (96, 128)
         self.MAX_TRIALS = 1000
+        self.MAX_EPOCH_SECONDS = 10
         
         # Input
         self.DATASET_ROOT_DIR = 'photoDataset'

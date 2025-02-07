@@ -20,3 +20,4 @@ photoDataset_aug/
 *.png
 logs
 output4/*
+venv2/
