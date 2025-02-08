@@ -60,7 +60,7 @@ def build_model(hp):
     architecture_depth = hp.Int(
         "Number of Convolutional Layers",
         min_value=1,
-        max_value=3,
+        max_value=2,
         default=1
     )
 
@@ -151,7 +151,7 @@ def build_model(hp):
     classifier_depth = hp.Int(
         "Number of Dense Layers",
         min_value=1,
-        max_value=2,
+        max_value=1,
         default=1
     )
 
@@ -159,9 +159,9 @@ def build_model(hp):
         # Dense layer hyperparameters
         neuron_count = hp.Int(
             f"DenseBlock {i+1}: Units",
-            min_value=32,
-            max_value=512,
-            step=64,
+            min_value=16,
+            max_value=256,
+            step=32,
             default=32
         )
         regularization_factor = hp.Float(
@@ -350,7 +350,7 @@ def main():
     # Configure Bayesian Optimization tuner
     tuner = keras_tuner.BayesianOptimization(
         build_model,
-        objective="val_accuracy",
+        objective="val_loss",
         max_trials=config.MAX_TRIALS,
         directory=config.OUTPUT_DIR
     )

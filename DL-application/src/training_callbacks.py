@@ -99,7 +99,7 @@ def ringring_callbackplease():
         TimeoutCallback(max_epoch_seconds=config.MAX_EPOCH_SECONDS),
         
         # Clear memory after each trial
-        MemoryCleanupCallback(),
+        # MemoryCleanupCallback(),
     ]
 
     return callbacks
