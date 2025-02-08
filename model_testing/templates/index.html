@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Testing Interface</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: min-content 1fr;
+            height: 100%;
+            gap: 8px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        
+        .box {
+            border: 1px solid #ccc;
+            padding: 8px;
+            background: #f9f9f9;
+        }
+        
+        #upload-box {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+        }
+        
+        #predictions-box {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+        }
+        
+        #webcam-box {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+        }
+        
+        #status-box {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #log-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .controls-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #webcam {
+            width: 100%;
+            height: calc(100% - 32px);
+            object-fit: contain;
+        }
+
+        .prediction-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .prediction {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .confidence {
+            color: #666;
+        }
+
+        #upload-status {
+            margin-left: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .error {
+            color: red;
+            margin: 4px 0;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        async function handleFileSelect(input) {
+            const formData = new FormData();
+            const statusDiv = document.getElementById('upload-status');
+            const logContent = document.getElementById('log-content');
+            
+            if (input.files.length === 0) return;
+
+            formData.append('model', input.files[0]);
+            statusDiv.textContent = 'Uploading...';
+
+            try {
+                const response = await fetch('/upload_model', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    statusDiv.textContent = 'Upload successful!';
+                    document.getElementById('start-predictions').disabled = false;
+                    logContent.innerHTML = result.model_summary;
+                    logContent.scrollTop = logContent.scrollHeight;
+                } else {
+                    statusDiv.textContent = 'Upload failed: ' + result.error;
+                }
+            } catch (error) {
+                statusDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('webcam');
+            const socket = io();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let predictionInterval = null;
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    video.srcObject = stream;
+                })
+                .catch((error) => {
+                    console.error("Error accessing camera:", error);
+                    alert("Please allow camera access to use this application");
+                });
+            } else {
+                alert("Sorry, your browser doesn't support webcam access");
+            }
+
+            function startPredictions() {
+                if (!predictionInterval) {
+                    predictionInterval = setInterval(() => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0);
+                        const frame = canvas.toDataURL('image/jpeg');
+                        socket.emit('frame', frame);
+                    }, 100);
+                    document.getElementById('start-predictions').disabled = true;
+                    document.getElementById('stop-predictions').disabled = false;
+                }
+            }
+
+            function stopPredictions() {
+                if (predictionInterval) {
+                    clearInterval(predictionInterval);
+                    predictionInterval = null;
+                    document.getElementById('start-predictions').disabled = false;
+                    document.getElementById('stop-predictions').disabled = true;
+                }
+            }
+
+            socket.on('prediction', (data) => {
+                const predictionsBox = document.getElementById('predictions-box');
+                predictionsBox.innerHTML = `
+                    <h2>Predictions</h2>
+                    <div class="prediction-row">
+                        <span class="prediction">${data.class}</span>
+                        <span class="confidence">${(data.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                `;
+            });
+
+            socket.on('error', (error) => {
+                const logContent = document.getElementById('log-content');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = `Error: ${error.message}`;
+                logContent.appendChild(errorDiv);
+                logContent.scrollTop = logContent.scrollHeight;
+            });
+
+            document.getElementById('start-predictions').addEventListener('click', startPredictions);
+            document.getElementById('stop-predictions').addEventListener('click', stopPredictions);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="box" id="upload-box">
+            <h2>Controls</h2>
+            <div class="controls-container">
+                <button onclick="document.getElementById('model-file').click()">Upload Model</button>
+                <button id="start-predictions" disabled>Start</button>
+                <button id="stop-predictions" disabled>Stop</button>
+                <input type="file" id="model-file" accept=".keras" style="display: none" onchange="handleFileSelect(this)">
+                <span id="upload-status"></span>
+            </div>
+        </div>
+        <div class="box" id="predictions-box">
+            <h2>Predictions</h2>
+            <!-- Prediction results will go here -->
+        </div>
+        <div class="box" id="webcam-box">
+            <h2>Webcam Feed</h2>
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+        <div class="box" id="status-box">
+            <h2>Logs</h2>
+            <div id="log-content"></div>
+        </div>
+    </div>
+</body>
+</html>
