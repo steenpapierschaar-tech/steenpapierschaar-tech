@@ -7,6 +7,7 @@ import autokeras as ak
 from src.training_callbacks import ringring_callbackplease
 from src.config import config
 from src.tensorboard import TensorboardLauncher
+from src.create_dataset import create_dataset
 
 def main():
     """Main function for training an AutoKeras image classification model.
@@ -39,46 +40,7 @@ def main():
     # Create training and validation datasets
     # If EXTERNAL_DATASET_USAGE is True, use separate directories
     # If False, split single directory using validation_split
-    if config.EXTERNAL_DATASET_USAGE:
-        # Create training dataset from main directory
-        train_ds = ak.image_dataset_from_directory(
-            directory=config.DATASET_ROOT_DIR,
-            batch_size=config.BATCH_SIZE,
-            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
-            shuffle=True,
-            seed=config.RANDOM_STATE,
-        )
-
-        # Create validation dataset from external directory
-        val_ds = ak.image_dataset_from_directory(
-            directory=config.DATASET_EXTERNAL_DIR,
-            batch_size=config.BATCH_SIZE,
-            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
-            shuffle=True,
-            seed=config.RANDOM_STATE,
-        )
-    else:
-        # Create training dataset with validation split
-        train_ds = ak.image_dataset_from_directory(
-            directory=config.DATASET_ROOT_DIR,
-            validation_split=config.VALIDATION_SPLIT,
-            subset='training',
-            batch_size=config.BATCH_SIZE,
-            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
-            shuffle=True,
-            seed=config.RANDOM_STATE,
-        )
-
-        # Create validation dataset from the same split
-        val_ds = ak.image_dataset_from_directory(
-            directory=config.DATASET_ROOT_DIR,
-            validation_split=config.VALIDATION_SPLIT,
-            subset='validation',
-            batch_size=config.BATCH_SIZE,
-            image_size=(config.TARGET_SIZE[0], config.TARGET_SIZE[1]),
-            shuffle=True,
-            seed=config.RANDOM_STATE,
-        )
+    train_ds, val_ds = create_dataset()
 
     # Define model architecture using AutoKeras building blocks
 
@@ -114,7 +76,7 @@ def main():
         inputs=input,
         outputs=head,
         project_name=config.OUTPUT_DIR,
-        max_trials=config.MAX_TRIALS,
+        max_trials=20,
         seed=config.RANDOM_STATE,
         directory=config.OUTPUT_DIR,
     )
