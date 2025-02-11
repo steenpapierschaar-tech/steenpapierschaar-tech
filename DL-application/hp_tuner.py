@@ -11,7 +11,6 @@ from src.config import config
 from src.create_dataset import create_dataset
 from src.training_callbacks import ringring_callbackplease
 from src.tensorboard import TensorboardLauncher
-from src.augmentation import apply_augmentation
 
 #--------------------
 # Model Architecture
@@ -36,8 +35,8 @@ def build_model(hp):
     # Input layer with flexible dimensions for variable image sizes
     inputs = keras.Input(shape=(None, None, 3))
 
-    # Apply data augmentation pipeline (includes rescaling)
-    x = apply_augmentation(inputs)
+    # Skip preprocessing as it's handled in the dataset pipeline
+    x = inputs
 
     #--------------------
     # Normalization Layer

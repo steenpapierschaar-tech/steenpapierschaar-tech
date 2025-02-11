@@ -18,10 +18,11 @@ class Config:
         self.EXTERNAL_DATASET_USAGE = True
         
         # Augmentation
+        self.AUGMENTATION_ENABLED = True
         self.RANDOM_BRIGHTNESS = 0.1
-        self.RANDOM_CONTRAST = 0.1
-        self.RANDOM_SATURATION = 1.0
-        self.RANDOM_HUE = 1.0
+        self.RANDOM_CONTRAST = 0.6
+        self.RANDOM_SATURATION = (0.4, 0.6)
+        self.RANDOM_HUE = 0.1
         self.RANDOM_CROP = 0.1
         self.RANDOM_FLIP = "horizontal_and_vertical"
         self.RANDOM_SHARPNESS = 0.1
@@ -37,8 +38,8 @@ class Config:
         # NOTE: This configuration value is currently not used in the codebase
         # self.TARGET_AUGMENTATION_SIZE = 1500  # Removed as unused
         self.TARGET_SIZE = (96, 128)
-        self.MAX_TRIALS = 1000
-        self.MAX_EPOCH_SECONDS = 10
+        self.MAX_TRIALS = 10
+        self.MAX_EPOCH_SECONDS = 3
         
         # Input
         self.DATASET_ROOT_DIR = 'photoDataset'
