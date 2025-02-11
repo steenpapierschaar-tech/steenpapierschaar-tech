@@ -166,14 +166,6 @@ def dir_to_dataset(directory: Path, for_preview=False):
         verbose=config.VERBOSE,
     )
     
-    # Add performance optimizations in optimal order
-    dataset = (dataset
-        .shuffle(1000, seed=config.RANDOM_STATE)  # Shuffle before take
-        .take(dataset.cardinality().numpy())      # Take all samples
-        .cache()                                  # Cache after take
-        .prefetch(buffer_size=AUTOTUNE)          # Prefetch last
-    )
-    
     return dataset
 
 def merge_datasets(*datasets):
