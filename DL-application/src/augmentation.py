@@ -43,10 +43,10 @@ def apply_augmentation(inputs):
     x = keras.layers.RandomRotation(factor=config.RANDOM_ROTATION)(x)
     
     # Apply random shearing transformation
-    # Shear factor of 0.2 means up to 20% shear in each direction
+    # Specify explicit range for shear factors to avoid negative values
     x = keras.layers.RandomShear(
-        x_factor=config.RANDOM_SHEAR_X,
-        y_factor=config.RANDOM_SHEAR_Y
+        x_factor=(0, config.RANDOM_SHEAR_X),
+        y_factor=(0, config.RANDOM_SHEAR_Y)
     )(x)
     
     # Randomly translate image in height and width

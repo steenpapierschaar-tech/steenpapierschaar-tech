@@ -75,7 +75,7 @@ def main():
     auto_model = ak.AutoModel(
         inputs=input,
         outputs=head,
-        project_name=config.OUTPUT_DIR,
+        project_name="AutoKeras_Image_Classification",
         max_trials=20,
         seed=config.RANDOM_STATE,
         directory=config.OUTPUT_DIR,

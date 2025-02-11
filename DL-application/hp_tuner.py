@@ -352,7 +352,8 @@ def main():
         build_model,
         objective="val_loss",
         max_trials=config.MAX_TRIALS,
-        directory=config.OUTPUT_DIR
+        directory=config.OUTPUT_DIR,
+        project_name="HP_TUNER"
     )
 
     # Perform hyperparameter search
@@ -375,9 +376,8 @@ def main():
         train_ds,
         validation_data=val_ds,
         epochs=config.EPOCHS,
-        callbacks=ringring_callbackplease()
     )
-    best_model.save(config.BEST_MODEL_PATH)
+    best_model.save(config.MODEL_BEST_PATH)
 
 if __name__ == "__main__":
     main()
