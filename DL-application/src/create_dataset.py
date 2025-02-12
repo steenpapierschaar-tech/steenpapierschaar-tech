@@ -183,23 +183,14 @@ def merge_datasets(*datasets):
     return datasets[0].concatenate(*datasets[1:]) if len(datasets) > 1 else datasets[0]
 
 def split_dataset(dataset):
-    """Split a dataset into training and validation sets using Keras utility.
+    """Split a dataset into training and validation sets."""
+    dataset_size = tf.data.experimental.cardinality(dataset).numpy()
+    train_size = int(dataset_size * (1 - config.VALIDATION_SPLIT))
     
-    Uses config.VALIDATION_SPLIT for the split ratio.
+    train_ds = dataset.take(train_size)
+    val_ds = dataset.skip(train_size)
     
-    Args:
-        dataset (tf.data.Dataset): Dataset to split
-        
-    Returns:
-        tuple[tf.data.Dataset, tf.data.Dataset]: Training and validation datasets
-    """
-    return keras.utils.split_dataset(
-        dataset,
-        left_size=1 - config.VALIDATION_SPLIT,
-        right_size=config.VALIDATION_SPLIT,
-        shuffle=True,
-        seed=config.RANDOM_STATE
-    )
+    return train_ds, val_ds
 
 def rescale_dataset(dataset):
     """Apply rescaling to a dataset without augmentation.
