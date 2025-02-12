@@ -36,7 +36,7 @@ def build_model(hp):
     inputs = keras.Input(shape=(None, None, 3))
 
     # Skip preprocessing as it's handled in the dataset pipeline
-    x = inputs
+    x = keras.layers.Resizing(config.TARGET_SIZE[0], config.TARGET_SIZE[1])(inputs)
 
     #--------------------
     # Normalization Layer
