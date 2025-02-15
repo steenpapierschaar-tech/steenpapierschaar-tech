@@ -159,7 +159,7 @@ def build_model(hp):
         neuron_count = hp.Int(
             f"DenseBlock {i+1}: Units",
             min_value=16,
-            max_value=256,
+            max_value=128,
             step=32,
             default=32
         )
@@ -320,7 +320,10 @@ def build_model(hp):
     model.compile(
         optimizer=optimizer,
         loss="categorical_crossentropy",
-        metrics=["accuracy"]
+        metrics=[
+            keras.metrics.Accuracy(),
+            keras.metrics.Precision(),
+            keras.metrics.Recall()]
     )
 
     return model
@@ -347,12 +350,13 @@ def main():
     tensorboard.start_tensorboard()
 
     # Configure Bayesian Optimization tuner
-    tuner = keras_tuner.BayesianOptimization(
+    tuner = keras_tuner.Hyperband(
         build_model,
         objective="val_loss",
-        max_trials=config.MAX_TRIALS,
         directory=config.OUTPUT_DIR,
-        project_name="HP_TUNER"
+        project_name="HP_TUNER3",
+        max_epochs=config.EPOCHS,
+        hyperband_iterations=2,
     )
 
     # Perform hyperparameter search

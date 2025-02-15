@@ -10,6 +10,7 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 # Model configuration
+DEFAULT_IMAGE_SIZE = (128, 96)  # Fallback dimensions if model has dynamic input shape
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model')
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_PATH = os.path.join(MODEL_DIR, 'current_model.keras')
@@ -62,24 +63,33 @@ def handle_frame(frame_data):
         
         # Preprocess and predict
         try:
-            target_size = model.input_shape[1:3][::-1]
+            # Use model's input shape if valid, otherwise fall back to default size
+            model_input_shape = model.input_shape[1:3]
+            using_fallback = None in model_input_shape
+            target_size = DEFAULT_IMAGE_SIZE if using_fallback else model_input_shape[::-1]
             
-            if target_size[0] is not None and target_size[1] is not None and target_size[0] > 0 and target_size[1] > 0:
-                processed_frame = cv2.resize(frame, target_size)
-            else:
-                raise ValueError("Invalid target size for resizing, current target size: {}".format(target_size))
+            # Show what input shape is being used
+            message = (
+                f"Model input shape: {model.input_shape}\n"
+                f"Using {'fallback' if using_fallback else 'model'} dimensions: {target_size}"
+            )
+            emit('model_info', {'message': message})
+            
+            # Resize frame
+            processed_frame = cv2.resize(frame, target_size)
             
             processed_frame = np.expand_dims(processed_frame, axis=0)
             prediction = model.predict(processed_frame, verbose=0)
             
-            # Get class and confidence
+            # Get predictions for all classes
             class_names = ['paper', 'rock', 'scissors']
-            class_idx = np.argmax(prediction[0])
-            confidence = float(prediction[0][class_idx])
+            probabilities = [float(p) for p in prediction[0]]
+            class_idx = np.argmax(probabilities)
             
             emit('prediction', {
-                'class': class_names[class_idx],
-                'confidence': confidence
+                'classes': class_names,
+                'probabilities': probabilities,
+                'highest_class': class_names[class_idx]
             })
         except Exception as e:
             emit('error', {'message': str(e)})
