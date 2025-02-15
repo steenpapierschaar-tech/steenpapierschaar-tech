@@ -62,7 +62,13 @@ def handle_frame(frame_data):
         
         # Preprocess and predict
         try:
-            processed_frame = cv2.resize(frame, model.input_shape[1:3][::-1])
+            target_size = model.input_shape[1:3][::-1]
+            
+            if target_size[0] is not None and target_size[1] is not None and target_size[0] > 0 and target_size[1] > 0:
+                processed_frame = cv2.resize(frame, target_size)
+            else:
+                raise ValueError("Invalid target size for resizing, current target size: {}".format(target_size))
+            
             processed_frame = np.expand_dims(processed_frame, axis=0)
             prediction = model.predict(processed_frame, verbose=0)
             
