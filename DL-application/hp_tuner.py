@@ -321,9 +321,10 @@ def build_model(hp):
         optimizer=optimizer,
         loss="categorical_crossentropy",
         metrics=[
-            keras.metrics.Accuracy(),
+            "accuracy",
             keras.metrics.Precision(),
-            keras.metrics.Recall()]
+            keras.metrics.Recall(),
+        ]
     )
 
     return model

@@ -34,13 +34,37 @@ def upload_model():
         file.save(MODEL_PATH)
         model = load_model(MODEL_PATH, compile=False)
         
-        # Get model summary
+        # Get model summary and output shape info
         import io
         import sys
         summary_io = io.StringIO()
+        
+        # Get basic model summary
         sys.stdout = summary_io
         model.summary()
         sys.stdout = sys.__stdout__
+        
+        # Add output shape information
+        output_shape = model.output_shape[-1]
+        summary_io.write(f"\nModel Output Classes: {output_shape}\n")
+        
+        # Try to get class indices if available
+        try:
+            if hasattr(model, 'get_config'):
+                config = model.get_config()
+                if isinstance(config, dict) and 'class_indices' in config:
+                    class_indices = config['class_indices']
+                    summary_io.write(f"Class Names: {', '.join(sorted(class_indices.keys()))}\n")
+        except Exception as e:
+            summary_io.write("Note: Class names not stored in model configuration\n")
+            
+        # Store the number of output classes for predictions
+        global class_names
+        class_names = ['paper', 'rock', 'scissors']  # Default fallback
+        if output_shape == len(class_names):
+            summary_io.write(f"\nUsing default class mapping: {', '.join(class_names)}\n")
+        else:
+            summary_io.write(f"\nWarning: Model output shape ({output_shape}) doesn't match default classes ({len(class_names)})\n")
         
         return jsonify({
             'success': 'Model uploaded successfully',
@@ -81,8 +105,8 @@ def handle_frame(frame_data):
             processed_frame = np.expand_dims(processed_frame, axis=0)
             prediction = model.predict(processed_frame, verbose=0)
             
-            # Get predictions for all classes
-            class_names = ['paper', 'rock', 'scissors']
+            # Use global class names for predictions
+            global class_names
             probabilities = [float(p) for p in prediction[0]]
             class_idx = np.argmax(probabilities)
             

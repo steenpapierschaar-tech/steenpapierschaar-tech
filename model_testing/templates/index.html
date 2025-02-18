@@ -94,16 +94,22 @@
             object-fit: contain;
         }
 
-        .prediction-row {
+        .predictions-container {
             display: flex;
-            align-items: center;
+            justify-content: space-between;
             gap: 16px;
-            margin-top: 8px;
+            margin-top: 16px;
+        }
+
+        .prediction-row {
+            flex: 1;
+            text-align: center;
         }
 
         .prediction {
             font-weight: bold;
             font-size: 16px;
+            margin-right: 8px;
         }
 
         .confidence {
@@ -198,13 +204,22 @@
 
             socket.on('prediction', (data) => {
                 const predictionsBox = document.getElementById('predictions-box');
-                predictionsBox.innerHTML = `
-                    <h2>Predictions</h2>
-                    <div class="prediction-row">
-                        <span class="prediction">${data.class}</span>
-                        <span class="confidence">${(data.confidence * 100).toFixed(1)}%</span>
-                    </div>
-                `;
+                let predictionsHtml = '<h2>Predictions</h2><div class="predictions-container">';
+                
+                // Add all classes with their probabilities
+                data.classes.forEach((className, index) => {
+                    const probability = data.probabilities[index];
+                    const isHighest = className === data.highest_class;
+                    predictionsHtml += `
+                        <div class="prediction-row">
+                            <span class="prediction" style="${isHighest ? 'color: #007bff;' : ''}">${className}</span>
+                            <span class="confidence">(${(probability * 100).toFixed(1)}%)</span>
+                        </div>
+                    `;
+                });
+                
+                predictionsHtml += '</div>';
+                predictionsBox.innerHTML = predictionsHtml;
             });
 
             socket.on('error', (error) => {
