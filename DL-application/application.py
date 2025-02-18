@@ -6,6 +6,14 @@ from src.training_callbacks import ringring_callbackplease
 from src.tensorboard import TensorboardLauncher
 from tensorflow import keras
 from tensorflow.keras import layers, regularizers, optimizers
+from src.create_plots import (
+    plot_dataset_distribution,
+    plot_training_history,
+    plot_confusion_matrix,
+    plot_metrics_comparison,
+    plot_bias_variance,
+    plot_metric_gap_analysis
+)
 
 def build_model():
     inputs = keras.layers.Input(shape=(config.TARGET_SIZE[0], config.TARGET_SIZE[1], 3))
@@ -65,6 +73,13 @@ def main():
     
     # Save model
     model.save(config.MODEL_BEST_PATH)
+    
+    plot_dataset_distribution()  # Dataset balance visualization
+    plot_training_history(config.CSV_LOG_PATH)  # Training progress
+    plot_confusion_matrix(model, val_ds)  # Classification performance
+    plot_metrics_comparison(model, val_ds)  # Precision/Recall analysis
+    plot_bias_variance(config.CSV_LOG_PATH)  # Bias-Variance tradeoff
+    plot_metric_gap_analysis(config.CSV_LOG_PATH)  # Overfitting analysis
     
 if __name__ == "__main__":
     main()

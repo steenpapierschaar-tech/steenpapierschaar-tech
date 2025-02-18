@@ -6,11 +6,19 @@ from pathlib import Path
 import keras
 import keras_tuner
 
-# Local application imports
+# Import custom modules
 from src.config import config
 from src.create_dataset import create_dataset
 from src.training_callbacks import ringring_callbackplease
 from src.tensorboard import TensorboardLauncher
+from src.create_plots import (
+    plot_dataset_distribution,
+    plot_training_history,
+    plot_confusion_matrix,
+    plot_metrics_comparison,
+    plot_bias_variance,
+    plot_metric_gap_analysis
+)
 
 #--------------------
 # Model Architecture
@@ -355,9 +363,9 @@ def main():
         build_model,
         objective="val_loss",
         directory=config.OUTPUT_DIR,
-        project_name="HP_TUNER3",
+        project_name="HP_TUNER4",
         max_epochs=config.EPOCHS,
-        hyperband_iterations=2,
+        hyperband_iterations=1,
     )
 
     # Perform hyperparameter search
@@ -382,6 +390,14 @@ def main():
         epochs=config.EPOCHS,
     )
     best_model.save(config.MODEL_BEST_PATH)
+    
+    # Generate plots showing dataset and model performance
+    plot_dataset_distribution()  # Dataset balance visualization
+    plot_training_history(config.CSV_LOG_PATH)  # Training progress
+    plot_confusion_matrix(best_model, val_ds)  # Classification performance
+    plot_metrics_comparison(best_model, val_ds)  # Precision/Recall analysis
+    plot_bias_variance(config.CSV_LOG_PATH)  # Bias-Variance tradeoff
+    plot_metric_gap_analysis(config.CSV_LOG_PATH)  # Overfitting analysis
 
 if __name__ == "__main__":
     main()

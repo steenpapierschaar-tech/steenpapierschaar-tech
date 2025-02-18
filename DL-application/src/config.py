@@ -33,7 +33,7 @@ class Config:
         self.RANDOM_ROTATION = 0.1
 
         # Training
-        self.EPOCHS = 30
+        self.EPOCHS = 6
         self.BATCH_SIZE = 16
         # NOTE: This configuration value is currently not used in the codebase
         # self.TARGET_AUGMENTATION_SIZE = 1500  # Removed as unused
@@ -50,13 +50,20 @@ class Config:
         self.TENSORBOARD_PORT = 6006
         self.TENSORBOARD_UPDATE_FREQ = 'epoch'  # or 'batch' for more frequent updates
         self.TENSORBOARD_HISTOGRAM_FREQ = 1
+        
+        # Metrics and Analysis
+        self.METRICS = ['accuracy', 'precision', 'recall']
+        self.PLOT_WINDOW_SIZE = 5  # For moving averages in plots
+        self.CLASS_NAMES = ['rock', 'paper', 'scissors']  # Known classes from dataset
 
         # Define directories with absolute paths
-        self.OUTPUT_DIRECTORY       = '/Volumes/dnn/autokeras'
+        #self.OUTPUT_DIRECTORY       = '/Volumes/dnn/autokeras'
+        self.OUTPUT_DIRECTORY       = 'output'
         self.OUTPUT_DIR             = self.OUTPUT_DIRECTORY
         self.MODEL_DIR              = os.path.join(self.OUTPUT_DIR, 'model')
         self.HISTORY_DIR            = os.path.join(self.OUTPUT_DIR, 'history')
-        self.LOGS_DIR               = os.path.join(self.OUTPUT_DIR, 'logs')
+        self.LOGS_DIR              = os.path.join(self.OUTPUT_DIR, 'logs')
+        self.PLOTS_DIR             = os.path.join(self.OUTPUT_DIR, 'plots')
 
         # Define resulting paths (directory + filename)
         self.TRAIN_MODEL_PATH       = os.path.join(self.MODEL_DIR, 'model.keras')
@@ -76,6 +83,7 @@ class Config:
             self.MODEL_DIR,
             self.HISTORY_DIR,
             self.LOGS_DIR,
+            self.PLOTS_DIR,
         ]
         
         for directory in directories:

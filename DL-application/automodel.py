@@ -1,4 +1,4 @@
-import numpy as np
+# Third-party imports
 import tensorflow as tf
 import keras
 import autokeras as ak
@@ -8,6 +8,15 @@ from src.training_callbacks import ringring_callbackplease
 from src.config import config
 from src.tensorboard import TensorboardLauncher
 from src.create_dataset import create_dataset
+from src.create_plots import (
+    plot_dataset_distribution,
+    plot_training_history,
+    plot_confusion_matrix,
+    plot_metrics_comparison,
+    plot_bias_variance,
+    plot_metric_gap_analysis
+)
+
 
 def main():
     """Main function for training an AutoKeras image classification model.
@@ -76,7 +85,7 @@ def main():
         inputs=input,
         outputs=head,
         project_name="AutoKeras_Image_Classification",
-        max_trials=1,
+        max_trials=5,
         seed=config.RANDOM_STATE,
         directory=config.OUTPUT_DIR,
     )
@@ -106,6 +115,14 @@ def main():
     # Can be loaded later using standard Keras API
     export = auto_model.export_model()
     print(export)
+    
+    # Generate plots showing dataset and model performance
+    plot_dataset_distribution()  # Dataset balance visualization
+    plot_training_history(config.CSV_LOG_PATH)  # Training progress
+    plot_confusion_matrix(export, val_ds)  # Classification performance
+    plot_metrics_comparison(export, val_ds)  # Precision/Recall analysis
+    plot_bias_variance(config.CSV_LOG_PATH)  # Bias-Variance tradeoff
+    plot_metric_gap_analysis(config.CSV_LOG_PATH)  # Overfitting analysis
 
 if __name__ == "__main__":
     main()
