@@ -76,7 +76,7 @@ def main():
         inputs=input,
         outputs=head,
         project_name="AutoKeras_Image_Classification",
-        max_trials=20,
+        max_trials=1,
         seed=config.RANDOM_STATE,
         directory=config.OUTPUT_DIR,
     )

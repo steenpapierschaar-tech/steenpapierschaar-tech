@@ -15,7 +15,7 @@ class Config:
         self.IMAGE_COLS = self.IMAGE_DIMS[1]
         self.VALIDATION_SPLIT = 0.2
         self.RANDOM_STATE = 42
-        self.EXTERNAL_DATASET_USAGE = True
+        self.EXTERNAL_DATASET_USAGE = False
         
         # Augmentation
         self.AUGMENTATION_ENABLED = True
@@ -33,13 +33,13 @@ class Config:
         self.RANDOM_ROTATION = 0.1
 
         # Training
-        self.EPOCHS = 10
-        self.BATCH_SIZE = 32
+        self.EPOCHS = 30
+        self.BATCH_SIZE = 16
         # NOTE: This configuration value is currently not used in the codebase
         # self.TARGET_AUGMENTATION_SIZE = 1500  # Removed as unused
         self.TARGET_SIZE = (96, 128)
         self.MAX_TRIALS = 10
-        self.MAX_EPOCH_SECONDS = 3
+        self.MAX_EPOCH_SECONDS = 10
         
         # Input
         self.DATASET_ROOT_DIR = 'photoDataset'
@@ -51,9 +51,9 @@ class Config:
         self.TENSORBOARD_UPDATE_FREQ = 'epoch'  # or 'batch' for more frequent updates
         self.TENSORBOARD_HISTOGRAM_FREQ = 1
 
-        # Define directories
-        self.OUTPUT_DIRECTORY       = 'output'
-        self.OUTPUT_DIR             = os.path.join(self.OUTPUT_DIRECTORY)
+        # Define directories with absolute paths
+        self.OUTPUT_DIRECTORY       = '/Volumes/dnn/autokeras'
+        self.OUTPUT_DIR             = self.OUTPUT_DIRECTORY
         self.MODEL_DIR              = os.path.join(self.OUTPUT_DIR, 'model')
         self.HISTORY_DIR            = os.path.join(self.OUTPUT_DIR, 'history')
         self.LOGS_DIR               = os.path.join(self.OUTPUT_DIR, 'logs')
