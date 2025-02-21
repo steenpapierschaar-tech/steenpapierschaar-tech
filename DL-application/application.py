@@ -64,15 +64,31 @@ def main():
 
     # Print model summary
     model.summary()
+    # Stop early if validation metrics meet criteria
+    class CustomCallback(keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs=None):
+            if logs.get('val_accuracy') > 0.92 and logs.get('val_loss') < 0.3:
+                print('\nReached target metrics - stopping training')
+                self.model.stop_training = True
+
+    custom_callback = CustomCallback()
+   # callbacks = ringring_callbackplease() + [custom_callback]
+   
+    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath=config.MODEL_MANUAL_PATH,
+        monitor='val_loss',
+        mode='min',
+        save_best_only=True)
+
     model.fit(
         train_ds,
         epochs=config.EPOCHS,
         validation_data=val_ds,
-        # callbacks=ringring_callbackplease,
+        callbacks=[model_checkpoint_callback ]
     )
     
     # Save model
-    model.save(config.MODEL_BEST_PATH)
+    #model.save(config.MODEL_MANUAL_PATH)
     
     plot_dataset_distribution()  # Dataset balance visualization
     plot_training_history(config.CSV_LOG_PATH)  # Training progress
