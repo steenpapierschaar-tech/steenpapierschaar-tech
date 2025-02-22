@@ -15,14 +15,7 @@ Key Components:
 import keras
 from src.config import config
 from src.create_dataset import create_dataset
-from src.create_plots import (
-    plot_bias_variance,
-    plot_confusion_matrix,
-    plot_dataset_distribution,
-    plot_metric_gap_analysis,
-    plot_metrics_comparison,
-    plot_training_history,
-)
+from src.create_plots import generate_all_plots
 from src.tensorboard import TensorboardLauncher
 
 
@@ -157,25 +150,8 @@ def main():
         callbacks=[model_checkpoint_callback, csv_logger, custom_callback],
     )
 
-    # Generate comprehensive performance analysis plots
-    # These help understand model behavior and identify potential issues
-    # Analyze dataset class distribution for balance
-    plot_dataset_distribution()
-
-    # Visualize training metrics over time
-    plot_training_history(config.CSV_LOG_PATH)
-
-    # Show model's classification accuracy per class
-    plot_confusion_matrix(model, val_ds)
-
-    # Compare precision and recall metrics
-    plot_metrics_comparison(model, val_ds)
-
-    # Analyze model's bias-variance tradeoff
-    plot_bias_variance(config.CSV_LOG_PATH)
-
-    # Check for signs of overfitting
-    plot_metric_gap_analysis(config.CSV_LOG_PATH)
+    # Generate all performance analysis plots in one call
+    generate_all_plots(model, config.CSV_LOG_PATH)
 
 
 if __name__ == "__main__":

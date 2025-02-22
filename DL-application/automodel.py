@@ -1,22 +1,10 @@
 import autokeras as ak
 import keras
-import os
-import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import confusion_matrix, precision_score, recall_score
 from src.config import config
+from src.create_plots import generate_all_plots
 from src.tensorboard import TensorboardLauncher
 from src.training_callbacks import ringring_callbackplease
-from src.create_plots import (
-    plot_dataset_distribution,
-    plot_training_history,
-    plot_confusion_matrix_automodel,
-    plot_metrics_comparison_automodel,
-    plot_bias_variance,
-    plot_metric_gap_analysis
-)
 
 # Enable mixed precision training for better performance on compatible GPUs
 # This allows some operations to use float16 instead of float32
@@ -56,7 +44,6 @@ validation_data = ak.image_dataset_from_directory(
 )
 
 
-
 # Calculate steps before modifying datasets
 train_steps = len(train_data)
 validation_steps = len(validation_data)
@@ -89,7 +76,7 @@ clf.fit(
     callbacks=ringring_callbackplease(),
     epochs=config.EPOCHS,
     steps_per_epoch=train_steps,
-    validation_steps=validation_steps
+    validation_steps=validation_steps,
 )
 
 print("Model training complete.")
@@ -113,10 +100,5 @@ print(f"Test accuracy: {results}")
 exported_model = clf.export_model()
 exported_model.save(config.MODEL_BEST_PATH)
 
-# Generate plots showing dataset and model performance
-plot_dataset_distribution()  # Dataset balance visualization
-plot_training_history(config.CSV_LOG_PATH)  # Training progress
-plot_confusion_matrix_automodel(exported_model, test_data, config.CLASS_NAMES)  # Classification performance
-plot_metrics_comparison_automodel(exported_model, test_data, config.CLASS_NAMES)  # Precision/Recall analysis
-plot_bias_variance(config.CSV_LOG_PATH)  # Bias-Variance tradeoff
-plot_metric_gap_analysis(config.CSV_LOG_PATH)  # Overfitting analysis
+# Generate all performance analysis plots in one call
+generate_all_plots(exported_model, config.CSV_LOG_PATH)

@@ -11,14 +11,7 @@ from src.config import config
 from src.create_dataset import create_dataset
 from src.training_callbacks import ringring_callbackplease
 from src.tensorboard import TensorboardLauncher
-from src.create_plots import (
-    plot_dataset_distribution,
-    plot_training_history,
-    plot_confusion_matrix,
-    plot_metrics_comparison,
-    plot_bias_variance,
-    plot_metric_gap_analysis
-)
+from src.create_plots import generate_all_plots
 
 #--------------------
 # Model Architecture
@@ -391,13 +384,8 @@ def main():
     )
     best_model.save(config.MODEL_BEST_PATH)
     
-    # Generate plots showing dataset and model performance
-    plot_dataset_distribution()  # Dataset balance visualization
-    plot_training_history(config.CSV_LOG_PATH)  # Training progress
-    plot_confusion_matrix(best_model, val_ds)  # Classification performance
-    plot_metrics_comparison(best_model, val_ds)  # Precision/Recall analysis
-    plot_bias_variance(config.CSV_LOG_PATH)  # Bias-Variance tradeoff
-    plot_metric_gap_analysis(config.CSV_LOG_PATH)  # Overfitting analysis
+    # Generate all performance analysis plots in one call
+    generate_all_plots(best_model, config.CSV_LOG_PATH)
 
 if __name__ == "__main__":
     main()
