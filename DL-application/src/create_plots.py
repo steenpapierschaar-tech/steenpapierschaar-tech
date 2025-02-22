@@ -11,12 +11,30 @@ def get_predictions(model, dataset):
     y_pred = []
     y_true = []
     
-    for x, y in dataset:
-        predictions = model.predict(x)
-        y_pred.extend(np.argmax(predictions, axis=1))
-        y_true.extend(np.argmax(y, axis=1))
+    # Create a mapping of class names to indices
+    class_to_idx = {name: idx for idx, name in enumerate(config.CLASS_NAMES)}
     
-    return np.array(y_true), np.array(y_pred)
+    for x, y in dataset:
+        # Get predictions for current batch
+        predictions = model.predict(x)
+        pred_labels = np.argmax(predictions, axis=1)
+        y_pred.extend(pred_labels.tolist())
+        
+        # Handle true labels
+        for label in y.numpy():
+            if isinstance(label, bytes):
+                # Decode byte string and map to index
+                label_str = label.decode('utf-8')
+                label_idx = class_to_idx[label_str]
+                y_true.append(label_idx)
+            else:
+                y_true.append(int(label))
+    
+    # Convert lists to numpy arrays
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+    
+    return y_true, y_pred
 
 def plot_dataset_distribution():
     """Generate a bar plot showing the number of images per class"""
@@ -201,4 +219,115 @@ def plot_metric_gap_analysis(csv_path):
     
     plt.tight_layout()
     plt.savefig(os.path.join(config.PLOTS_DIR, 'metric_gap_analysis.png'))
+    plt.close()
+
+def plot_metrics_comparison_automodel(model, test_dataset, class_names):
+    """Generate precision/recall metrics comparison plot"""
+    # Get predictions and true labels
+    y_pred = []
+    y_true = []
+    
+    # Create a mapping of class names to indices
+    class_to_idx = {name: idx for idx, name in enumerate(class_names)}
+    
+    for x, y in test_dataset:
+        # Get predictions for current batch
+        predictions = model.predict(x)
+        pred_labels = np.argmax(predictions, axis=1)
+        y_pred.extend(pred_labels.tolist())
+        
+        # Handle true labels
+        for label in y.numpy():
+            if isinstance(label, bytes):
+                # Decode byte string and map to index
+                label_str = label.decode('utf-8')
+                label_idx = class_to_idx[label_str]
+                y_true.append(label_idx)
+            else:
+                y_true.append(int(label))
+    
+    # Convert lists to numpy arrays
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+    
+    # Calculate per-class metrics
+    precision_per_class = precision_score(y_true, y_pred, average=None)
+    recall_per_class = recall_score(y_true, y_pred, average=None)
+    
+    # Calculate macro averages
+    macro_precision = precision_score(y_true, y_pred, average='macro')
+    macro_recall = recall_score(y_true, y_pred, average='macro')
+    
+    # Create figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # Plot per-class metrics
+    x = np.arange(len(class_names))
+    width = 0.35
+    
+    ax1.bar(x - width/2, precision_per_class, width, label='Precision')
+    ax1.bar(x + width/2, recall_per_class, width, label='Recall')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(class_names)
+    ax1.set_ylabel('Score')
+    ax1.set_title('Per-class Metrics')
+    ax1.legend()
+    ax1.grid(True)
+    
+    # Plot macro averages
+    metrics = ['Precision', 'Recall']
+    scores = [macro_precision, macro_recall]
+    
+    ax2.bar(metrics, scores)
+    ax2.set_ylabel('Score')
+    ax2.set_title('Macro Averages')
+    ax2.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(config.PLOTS_DIR, 'metrics_comparison.png'))
+    plt.close()
+    
+    
+def plot_confusion_matrix_automodel(model, test_dataset, class_names):
+    """Generate and plot confusion matrix directly"""
+    # Get predictions
+    y_pred = []
+    y_true = []
+    
+    # Create a mapping of class names to indices
+    class_to_idx = {name: idx for idx, name in enumerate(class_names)}
+    
+    for x, y in test_dataset:
+        # Get predictions for current batch
+        predictions = model.predict(x)
+        pred_labels = np.argmax(predictions, axis=1)
+        y_pred.extend(pred_labels.tolist())
+        
+        # Handle true labels
+        for label in y.numpy():
+            if isinstance(label, bytes):
+                # Decode byte string and map to index
+                label_str = label.decode('utf-8')
+                label_idx = class_to_idx[label_str]
+                y_true.append(label_idx)
+            else:
+                y_true.append(int(label))
+    
+    # Convert lists to numpy arrays
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+    
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    
+    # Plot confusion matrix
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=class_names,
+                yticklabels=class_names)
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.tight_layout()
+    plt.savefig(os.path.join(config.PLOTS_DIR, 'confusion_matrix.png'))
     plt.close()

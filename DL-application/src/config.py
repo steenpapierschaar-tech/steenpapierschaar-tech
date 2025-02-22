@@ -33,12 +33,12 @@ class Config:
         self.RANDOM_ROTATION = 0.1
 
         # Training
-        self.EPOCHS = 6
-        self.BATCH_SIZE = 16
+        self.EPOCHS = 30
+        self.BATCH_SIZE = 32
         # NOTE: This configuration value is currently not used in the codebase
         # self.TARGET_AUGMENTATION_SIZE = 1500  # Removed as unused
         self.TARGET_SIZE = (96, 128)
-        self.MAX_TRIALS = 10
+        self.MAX_TRIALS = 100
         self.MAX_EPOCH_SECONDS = 10
         
         # Input

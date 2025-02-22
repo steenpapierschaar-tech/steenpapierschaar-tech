@@ -59,8 +59,8 @@ def ringring_callbackplease():
         # Stop training when validation metrics plateau
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=4,
-            min_delta=0.05,
+            patience=10,
+            min_delta=0.02,
             verbose=config.VERBOSE,
         ),
         
