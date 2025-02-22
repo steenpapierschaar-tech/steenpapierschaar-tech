@@ -1,8 +1,8 @@
 """
 Rock Paper Scissors Image Classifier using Deep Learning
 
-This application implements a Convolutional Neural Network (CNN) to classify images 
-into three categories: rock, paper, or scissors. The model uses multiple 
+This application implements a Convolutional Neural Network (CNN) to classify images
+into three categories: rock, paper, or scissors. The model uses multiple
 convolutional layers for feature extraction followed by dense layers for classification.
 
 Key Components:
@@ -24,12 +24,12 @@ from src.create_plots import (
     plot_training_history,
 )
 from src.tensorboard import TensorboardLauncher
-from tensorflow import keras
+
 
 def build_model():
     """
     Creates the CNN model architecture for image classification.
-    
+
     Architecture Overview:
     1. Input Layer: Accepts RGB images of size specified in config
     2. Multiple Convolutional Blocks: Each containing:
@@ -37,7 +37,7 @@ def build_model():
        - BatchNormalization: Stabilizes learning
        - MaxPooling: Reduces spatial dimensions
     3. Dense Layers: Final classification based on extracted features
-    
+
     Returns:
         keras.Model: Compiled model ready for training
     """
@@ -55,7 +55,7 @@ def build_model():
         padding="valid",
         kernel_regularizer=keras.regularizers.l2(0.0001633),
     )(inputs)
-    
+
     # Normalization and Pooling
     # - BatchNormalization: Normalizes the layer's inputs, stabilizing training
     # - MaxPooling: Reduces image size while keeping important features
@@ -110,7 +110,7 @@ def build_model():
 def main():
     """
     Main training pipeline for the rock-paper-scissors classifier.
-    
+
     Steps:
     1. Load and prepare training/validation datasets
     2. Configure model training settings
@@ -148,30 +148,32 @@ def main():
         save_best_only=True,
     )
 
+    csv_logger = keras.callbacks.CSVLogger(config.CSV_LOG_PATH, append=True)
+
     model.fit(
         train_ds,
         epochs=config.EPOCHS,
         validation_data=val_ds,
-        callbacks=[model_checkpoint_callback],
+        callbacks=[model_checkpoint_callback, csv_logger, custom_callback],
     )
 
     # Generate comprehensive performance analysis plots
     # These help understand model behavior and identify potential issues
     # Analyze dataset class distribution for balance
     plot_dataset_distribution()
-    
+
     # Visualize training metrics over time
     plot_training_history(config.CSV_LOG_PATH)
-    
+
     # Show model's classification accuracy per class
     plot_confusion_matrix(model, val_ds)
-    
+
     # Compare precision and recall metrics
     plot_metrics_comparison(model, val_ds)
-    
+
     # Analyze model's bias-variance tradeoff
     plot_bias_variance(config.CSV_LOG_PATH)
-    
+
     # Check for signs of overfitting
     plot_metric_gap_analysis(config.CSV_LOG_PATH)
 
