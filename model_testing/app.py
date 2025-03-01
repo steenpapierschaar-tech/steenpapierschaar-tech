@@ -44,9 +44,12 @@ def upload_model():
         model.summary()
         sys.stdout = sys.__stdout__
         
-        # Add output shape information
+        # Add output shape information and detect encoding type
         output_shape = model.output_shape[-1]
-        summary_io.write(f"\nModel Output Classes: {output_shape}\n")
+        global is_categorical
+        is_categorical = output_shape > 1
+        summary_io.write(f"\nModel Output Classes: {output_shape}")
+        summary_io.write(f"\nEncoding Type: {'Categorical' if is_categorical else 'Integer'}\n")
         
         # Try to get class indices if available
         try:
@@ -106,14 +109,23 @@ def handle_frame(frame_data):
             prediction = model.predict(processed_frame, verbose=0)
             
             # Use global class names for predictions
-            global class_names
+            global class_names, is_categorical
+            
+            if is_categorical:
             probabilities = [float(p) for p in prediction[0]]
             class_idx = np.argmax(probabilities)
+                confidence = probabilities[class_idx]
+            else:
+                class_idx = int(prediction[0][0])
+                probabilities = [1.0 if i == class_idx else 0.0 for i in range(len(class_names))]
+                confidence = 1.0
             
             emit('prediction', {
                 'classes': class_names,
                 'probabilities': probabilities,
-                'highest_class': class_names[class_idx]
+                'highest_class': class_names[class_idx],
+                'encoding_type': 'categorical' if is_categorical else 'integer',
+                'confidence': confidence
             })
         except Exception as e:
             emit('error', {'message': str(e)})

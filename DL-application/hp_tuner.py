@@ -1,6 +1,5 @@
 # Standard library imports
-import sys
-from pathlib import Path
+import os
 
 # Third-party imports
 import keras
@@ -11,7 +10,6 @@ from src.config import config
 from src.create_dataset import create_dataset
 from src.training_callbacks import ringring_callbackplease
 from src.tensorboard import TensorboardLauncher
-from src.create_plots import generate_all_plots
 
 #--------------------
 # Model Architecture
@@ -348,44 +346,56 @@ def main():
     train_ds, val_ds = create_dataset()
 
     # Initialize TensorBoard for monitoring
-    tensorboard = TensorboardLauncher(config.LOGS_DIR)
+    tensorboard = TensorboardLauncher()
     tensorboard.start_tensorboard()
 
-    # Configure Bayesian Optimization tuner
-    tuner = keras_tuner.Hyperband(
-        build_model,
-        objective="val_loss",
-        directory=config.OUTPUT_DIR,
-        project_name="HP_TUNER4",
-        max_epochs=config.EPOCHS,
-        hyperband_iterations=1,
-    )
+    # Load existing model or perform hyperparameter tuning
+    if config.SKIP_TRAINING_HP_TUNER:
+        print("Loading existing tuned model...")
+        best_model = keras.models.load_model(config.PATH_HP_TUNER_BEST)
+    else:
+        print("Starting hyperparameter tuning...")
+        # Configure Bayesian Optimization tuner
+        tuner = keras_tuner.Hyperband(
+            build_model,
+            objective="val_loss",
+            directory=config.DIR_HP_TUNER_MODEL,
+            project_name="HP_TUNER4",
+            max_epochs=config.EPOCHS,
+            hyperband_iterations=1,
+        )
 
-    # Perform hyperparameter search
-    tuner.search(
-        train_ds,
-        validation_data=val_ds,
-        epochs=config.EPOCHS,
-        callbacks=ringring_callbackplease()
-    )
+        # Perform hyperparameter search
+        tuner.search(
+            train_ds,
+            validation_data=val_ds,
+            epochs=config.EPOCHS,
+            callbacks=ringring_callbackplease(
+                logs_dir=config.DIR_HP_TUNER_LOGS,
+                csv_log_path=config.PATH_HP_TUNER_LOG,
+                use_model_checkpoint=False,
+                use_early_stopping=True,
+                use_csv_logger=True,
+                use_timeout=True,
+                use_custom_callback=False,
+                use_tensorboard=True
+            )
+        )
 
-    # Save best hyperparameters
-    best_hp = tuner.get_best_hyperparameters(1)[0]
-    with open(config.HYPERPARAMS_PATH, "w") as f:
-        for param, value in best_hp.values.items():
-            f.write(f"{param}: {value}\n")
+        # Save best hyperparameters
+        best_hp = tuner.get_best_hyperparameters(1)[0]
+        with open(config.PATH_HP_TUNER_HYPERPARAMS, "w") as f:
+            for param, value in best_hp.values.items():
+                f.write(f"{param}: {value}\n")
 
-    # Train final model with best hyperparameters
-    best_model = tuner.hypermodel.build(best_hp)
-    best_model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=config.EPOCHS,
-    )
-    best_model.save(config.MODEL_BEST_PATH)
+        # Train final model with best hyperparameters
+        best_model = tuner.hypermodel.build(best_hp)
+        best_model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=config.EPOCHS,
+        )
+        best_model.save(config.PATH_HP_TUNER_BEST)
     
-    # Generate all performance analysis plots in one call
-    generate_all_plots(best_model, config.CSV_LOG_PATH)
-
 if __name__ == "__main__":
     main()

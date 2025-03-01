@@ -88,7 +88,7 @@ def save_feature_maps(image, feature_maps):
 def main():
     # Load data
     train_ds, val_ds = create_dataset()
-    tensorboard = TensorboardLauncher(config.LOGS_DIR)
+    tensorboard = TensorboardLauncher()
     tensorboard.start_tensorboard()
     model = build_model()
     model.compile(optimizer=tf.keras.optimizers.AdamW(learning_rate=0.00040288),

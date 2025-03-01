@@ -206,6 +206,24 @@ def rescale_dataset(dataset):
         num_parallel_calls=AUTOTUNE
     )
 
+def create_validation_dataset():
+    """Create a validation dataset from the external dataset directory.
+    
+    Returns:
+        tf.data.Dataset: Validation dataset with categorical labels
+        and pixel values in [0, 1] range.
+    """
+    # Create validation dataset using existing infrastructure
+    val_ds = dir_to_dataset(Path(config.DATASET_EXTERNAL_DIR))
+    
+    # Apply rescaling without augmentation
+    val_ds = rescale_dataset(val_ds)
+    
+    # Configure dataset for performance
+    val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    
+    return val_ds
+
 def create_dataset(augment_train=True, additional_dirs=None):
     """Create and return datasets for training and validation.
     

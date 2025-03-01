@@ -15,9 +15,8 @@ Key Components:
 import keras
 from src.config import config
 from src.create_dataset import create_dataset
-from src.create_plots import generate_all_plots
 from src.tensorboard import TensorboardLauncher
-
+from src.training_callbacks import ringring_callbackplease
 
 def build_model():
     """
@@ -99,7 +98,6 @@ def build_model():
 
     return model
 
-
 def main():
     """
     Main training pipeline for the rock-paper-scissors classifier.
@@ -107,18 +105,29 @@ def main():
     Steps:
     1. Load and prepare training/validation datasets
     2. Configure model training settings
-    3. Train the model with early stopping
+    3. Train the model with early stopping (if SKIP_TRAINING is False)
     4. Generate performance visualization plots
     """
     # Load and prepare datasets with augmentation
     train_ds, val_ds = create_dataset()
-    tensorboard = TensorboardLauncher(config.LOGS_DIR)
+    tensorboard = TensorboardLauncher()
     tensorboard.start_tensorboard()
-    model = build_model()
+
+    # If model exists and SKIP_TRAINING is True, load it
+    if config.SKIP_TRAINING_MANUAL_CNN:
+        print("Loading existing model...")
+        model = keras.models.load_model(config.PATH_MANUAL_CNN_MODEL)
+    else:
+        print("Building and training new model...")
+        model = build_model()
     model.compile(
         optimizer=keras.optimizers.AdamW(learning_rate=0.00040288),
         loss="categorical_crossentropy",
-        metrics=["accuracy"],
+        metrics=[
+            "accuracy",
+            keras.metrics.Precision(),
+            keras.metrics.Recall(),
+        ],
     )
 
     # Display model architecture summary
@@ -127,32 +136,24 @@ def main():
     # Early Stopping Callback
     # Stops training if the model achieves high accuracy and low loss
     # This prevents overfitting and saves training time
-    class CustomCallback(keras.callbacks.Callback):
-        def on_epoch_end(self, epoch, logs=None):
-            if logs.get("val_accuracy") > 0.92 and logs.get("val_loss") < 0.3:
-                print("\nReached target metrics - stopping training")
-                self.model.stop_training = True
-
-    custom_callback = CustomCallback()
-    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-        filepath=config.MODEL_MANUAL_PATH,
-        monitor="val_loss",
-        mode="min",
-        save_best_only=True,
-    )
-
-    csv_logger = keras.callbacks.CSVLogger(config.CSV_LOG_PATH, append=True)
-
-    model.fit(
-        train_ds,
-        epochs=config.EPOCHS,
-        validation_data=val_ds,
-        callbacks=[model_checkpoint_callback, csv_logger, custom_callback],
-    )
-
-    # Generate all performance analysis plots in one call
-    generate_all_plots(model, config.CSV_LOG_PATH)
-
+    if not config.SKIP_TRAINING_MANUAL_CNN:
+        callbacks = ringring_callbackplease(
+            logs_dir=tensorboard.log_dir,
+            csv_log_path=config.PATH_MANUAL_CNN_LOG,
+            use_model_checkpoint=True,
+            use_early_stopping=False,
+            use_csv_logger=True,
+            use_timeout=False,
+            use_custom_callback=False,
+            use_tensorboard=True
+        )
+        
+        model.fit(
+            train_ds,
+            epochs=config.EPOCHS,
+            validation_data=val_ds,
+            callbacks=callbacks,
+        )
 
 if __name__ == "__main__":
     main()
