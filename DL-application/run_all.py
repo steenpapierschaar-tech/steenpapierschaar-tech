@@ -28,8 +28,8 @@ def clear_output_directory():
         print(f"Cleared output directory: {config.OUTPUT_DIR}")
     
     # Reset training flags since we're starting fresh
-    config.SKIP_TRAINING_MANUAL_CNN = False
-    config.SKIP_TRAINING_AUTO_KERAS = False
+    config.SKIP_TRAINING_MANUAL_CNN = True
+    config.SKIP_TRAINING_AUTO_KERAS = True
     config.SKIP_TRAINING_HP_TUNER = False
     
     # Recreate directory structure
