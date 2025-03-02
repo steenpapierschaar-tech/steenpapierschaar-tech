@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
+# Configure parallel processing
+AUTOTUNE = tf.data.AUTOTUNE
+
 # Configuration for the DL application
 CONFIG = {
     # Directories
@@ -20,13 +23,13 @@ CONFIG = {
     "OUTPUT_DIR": "output",
     # Image parameters
     "IMAGE_DIMS": (240, 320),
-    "TARGET_SIZE": (96, 96),
+    "TARGET_SIZE": (120, 160),
     # Training parameters
-    "BATCH_SIZE": 16,
+    "BATCH_SIZE": 32,
     "EPOCHS": 10,
     "VALIDATION_SPLIT": 0.2,
     "RANDOM_STATE": 42,
-    "MAX_TRIALS": 5,
+    "MAX_TRIALS": 10,
     "MAX_EPOCH_SECONDS": 10,
     # Augmentation settings
     "AUGMENTATION_ENABLED": True,
@@ -105,6 +108,14 @@ class CustomCallback(keras.callbacks.Callback):
             print("\nReached target metrics - stopping training")
             self.model.stop_training = True
 
+class ValLossEarlyStop(keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch == 4:  # Check after 5th epoch (0-based index)
+            val_loss = logs.get('val_loss')
+            if val_loss is not None and val_loss >= 10:
+                print(f"\nStopping training: val_loss {val_loss:.2f} >= 10 after 5 epochs")
+                self.model.stop_training = True
+
 
 def create_callbacks():
     """Create and return training callbacks."""
@@ -116,7 +127,7 @@ def create_callbacks():
             save_best_only=True,
         ),
         keras.callbacks.EarlyStopping(
-            monitor="val_loss", patience=10, min_delta=0.02, verbose=CONFIG["VERBOSE"]
+            monitor="val_loss", patience=5, min_delta=0.02, verbose=CONFIG["VERBOSE"]
         ),
         keras.callbacks.TensorBoard(
             log_dir=OUTPUT_DIRS["hp_tuner"]["logs"],
@@ -130,6 +141,7 @@ def create_callbacks():
         ),
         TimeoutCallback(max_epoch_seconds=CONFIG["MAX_EPOCH_SECONDS"]),
         CustomCallback(),
+        ValLossEarlyStop(),
     ]
     return callbacks
 
@@ -473,7 +485,7 @@ def build_model(hp):
     # Model Compilation
     # --------------------
     # Output layer with softmax activation for classification (keep in float32 for stability)
-    outputs = keras.layers.Dense(3, activation="softmax", dtype='float32')(x)
+    outputs = keras.layers.Dense(3, activation="softmax")(x)
     model = keras.Model(inputs=inputs, outputs=outputs)
 
     
@@ -520,18 +532,19 @@ def main():
 
     print("Starting hyperparameter tuning...")
     # Configure Bayesian Optimization tuner
-    tuner = keras_tuner.Hyperband(
+    tuner = keras_tuner.tuners.BayesianOptimization(
         build_model,
         objective="val_loss",
+        max_trials=CONFIG["MAX_TRIALS"],
         directory=OUTPUT_DIRS["hp_tuner"]["model"],
-        max_epochs=CONFIG["EPOCHS"],
-        hyperband_iterations=1,
+        project_name="hyperparameter_tuning",
+        seed=CONFIG["RANDOM_STATE"],
     )
 
     # Perform hyperparameter search
     tuner.search(
         train_ds,
-        validation_data=val_ds,
+        validation_data=test_ds,
         epochs=CONFIG["EPOCHS"],
         callbacks=create_callbacks(),
     )
@@ -567,7 +580,7 @@ def main():
     y_pred_classes = tf.argmax(y_pred, axis=1)
 
     # Get true labels (need to unbatch the test dataset)
-    y_true = tf.concat([y for _, y in test_ds], axis=0)
+    y_true = tf.concat([y for _, y in val_ds], axis=0)
     y_true_classes = tf.argmax(y_true, axis=1)
 
     # Calculate confusion matrix
