@@ -22,7 +22,7 @@ class Config:
         self.IMAGE_COLS = self.IMAGE_DIMS[1]
         self.VALIDATION_SPLIT = 0.2
         self.RANDOM_STATE = 42
-        self.EXTERNAL_DATASET_USAGE = True
+        self.EXTERNAL_DATASET_USAGE = False
 
         # Augmentation
         self.AUGMENTATION_ENABLED = False
@@ -41,7 +41,7 @@ class Config:
 
         # Training
         self.EPOCHS = 100
-        self.BATCH_SIZE = 128
+        self.BATCH_SIZE = 16
         self.TARGET_SIZE = (128, 128)
         self.MAX_TRIALS = 100
         self.MAX_EPOCH_SECONDS = 10

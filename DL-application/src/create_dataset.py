@@ -257,13 +257,47 @@ def create_dataset(augment_train=True, additional_dirs=None):
     
     return train_ds, val_ds
 
-if __name__ == "__main__":
+def show_batch_samples(dataset, num_samples=5, name="Dataset"):
+    """Display information about a batch of samples"""
+    print(f"\n=== {name} Samples ===")
+    
+    # Get first batch
+    for images, labels in dataset.take(1):
+        # Show sample details
+        print(f"\nBatch shape: {images.shape}")
+        print(f"Label shape: {labels.shape}")
+        
+        # Show first num_samples
+        for i in range(min(num_samples, len(images))):
+            label_idx = tf.argmax(labels[i]).numpy()
+            print(f"\nSample {i+1}:")
+            print(f"Class: {config.CLASS_NAMES[label_idx]}")
+            print(f"One-hot label: {labels[i].numpy()}")
+            print(f"Image shape: {images[i].shape}")
+            print(f"Value range: [{tf.reduce_min(images[i]):.3f}, {tf.reduce_max(images[i]):.3f}]")
+        
+        # Show class distribution for whole batch
+        class_counts = {}
+        for label in labels:
+            class_idx = tf.argmax(label).numpy()
+            class_name = config.CLASS_NAMES[class_idx]
+            class_counts[class_name] = class_counts.get(class_name, 0) + 1
+        
+        print("\nBatch class distribution:")
+        total = sum(class_counts.values())
+        for class_name, count in class_counts.items():
+            percentage = (count / total) * 100
+            print(f"{class_name}: {count} ")
 
+if __name__ == "__main__":
+    print("\n=== Creating Datasets ===")
     ds_train, ds_val = create_dataset()
 
-    # Print dataset information
-    print(f"Training dataset: {ds_train}")
-    print(f"Validation dataset: {ds_val}")
-
+    # Show samples from training dataset
+    show_batch_samples(ds_train, num_samples=5, name="Training Dataset")
+    
+    # Show samples from validation dataset
+    show_batch_samples(ds_val, num_samples=5, name="Validation Dataset")
+    
     # Show augmentation preview
     preview_augmentation_pipeline(num_samples=config.BATCH_SIZE)
