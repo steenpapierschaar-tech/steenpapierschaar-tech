@@ -236,7 +236,7 @@ def create_dataset(augment_train=True, additional_dirs=None):
         with pixel values in [0, 1] range.
     """
     if config.EXTERNAL_DATASET_USAGE:
-        train_ds = dir_to_dataset(Path(config.DATASET_ROOT_DIR))
+        train_ds = dir_to_dataset(Path(config.DATASET_EXTERNAL_DIR))
         val_ds = dir_to_dataset(Path(config.DATASET_EXTERNAL_DIR))
     else:
         dataset = dir_to_dataset(Path(config.DATASET_ROOT_DIR))
@@ -258,9 +258,6 @@ def create_dataset(augment_train=True, additional_dirs=None):
     return train_ds, val_ds
 
 if __name__ == "__main__":
-    """
-    Test functions in this file
-    """
 
     ds_train, ds_val = create_dataset()
 

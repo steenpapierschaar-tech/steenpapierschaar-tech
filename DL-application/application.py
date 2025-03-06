@@ -17,86 +17,86 @@ from src.config import config
 from src.create_dataset import create_dataset
 from src.tensorboard import TensorboardLauncher
 from src.training_callbacks import ringring_callbackplease
+import numpy as np
+
+
+def show_classes(train_ds):
+    """
+    Display the class names from the training dataset.
+    """
+    # Assuming train_ds is a TensorFlow Dataset object with (image, label) pairs
+    class_names = []
+    for _, labels in train_ds:
+        class_names.extend(np.argmax(labels, axis=1))  # Convert one-hot labels to class indices
+    class_names = np.unique(class_names)  # Get unique class indices
+    print("Class Names:", class_names)
+
+
+def compute_class_weights(dataset):
+    """Compute balanced class weights."""
+    labels = []
+    for _, y in dataset:
+        labels.extend(np.argmax(y, axis=1))
+    
+    from sklearn.utils.class_weight import compute_class_weight
+    weights = compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(labels),
+        y=labels
+    )
+    return dict(enumerate(weights))
+
 
 def build_model():
-    """
-    Creates the CNN model architecture for image classification.
-
-    Architecture Overview:
-    1. Input Layer: Accepts RGB images of size specified in config
-    2. Multiple Convolutional Blocks: Each containing:
-       - Conv2D: Extracts visual features using sliding filters
-       - BatchNormalization: Stabilizes learning
-       - MaxPooling: Reduces spatial dimensions
-    3. Dense Layers: Final classification based on extracted features
-
-    Returns:
-        keras.Model: Compiled model ready for training
-    """
-    # Input layer: Shape is (height, width, 3 color channels)
     inputs = keras.layers.Input(shape=(config.TARGET_SIZE[0], config.TARGET_SIZE[1], 3))
-    # First Convolutional Block
-    # - 224 filters: Number of different features to detect
-    # - (7,7) kernel: Size of the sliding window
-    # - leaky_relu: Prevents "dying ReLU" problem
-    # - L2 regularization: Prevents overfitting by penalizing large weights
+    
+    # Reduce initial filter size and add regularization
     x = keras.layers.Conv2D(
-        224,
-        (7, 7),
-        activation="leaky_relu",
-        padding="valid",
-        kernel_regularizer=keras.regularizers.l2(0.0001633),
+        64,  # Reduced from 224
+        (3, 3),  # Smaller kernel
+        activation="relu",
+        padding="same",  # Changed to same padding
+        kernel_regularizer=keras.regularizers.l2(0.01)
     )(inputs)
-
-    # Normalization and Pooling
-    # - BatchNormalization: Normalizes the layer's inputs, stabilizing training
-    # - MaxPooling: Reduces image size while keeping important features
+    
     x = keras.layers.BatchNormalization()(x)
-    x = keras.layers.Dropout(0)(x)
-    x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+    x = keras.layers.MaxPooling2D()(x)
+    
+    # Add more balanced layers
+    for filters in [128, 256]:
+        x = keras.layers.Conv2D(
+            filters, 
+            (3, 3),
+            activation="relu",
+            padding="same",
+            kernel_regularizer=keras.regularizers.l2(0.1)
+        )(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.MaxPooling2D()(x)
+    
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    x = keras.layers.Dense(256, activation="relu")(x)
+    x = keras.layers.Dropout(0.6)(x)  # Increased dropout
+    outputs = keras.layers.Dense(3, activation="softmax")(x)  # Re-add softmax
+    
+    return keras.Model(inputs=inputs, outputs=outputs)
 
-    # Second Convolutional Block
-    # Similar structure to first block, building more complex features
-    x = keras.layers.Conv2D(
-        224,
-        (7, 7),
-        activation="leaky_relu",
-        padding="valid",
-        kernel_regularizer=keras.regularizers.l2(0.0001633),
-    )(x)
-    x = keras.layers.BatchNormalization()(x)
-    x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
-
-    # Third Convolutional Block
-    # Deepest convolutional layer, detecting most complex features
-    x = keras.layers.Conv2D(
-        224,
-        (7, 7),
-        activation="leaky_relu",
-        padding="valid",
-        kernel_regularizer=keras.regularizers.l2(0.0001633),
-    )(x)
-    x = keras.layers.BatchNormalization()(x)
-    x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
-
-    # Flatten: Converts 2D feature maps to 1D vector for dense layers
-    x = keras.layers.Flatten()(x)
-
-    # Dense Layer: Combines features for classification
-    # - 512 neurons: Rich representation for final classification
-    # - Dropout: Randomly turns off 10% of neurons to prevent overfitting
-    x = keras.layers.Dense(512, activation="leaky_relu")(x)
-    x = keras.layers.Dropout(0.1)(x)
-
-    # Output Layer
-    # - 3 neurons: One for each class (rock, paper, scissors)
-    # - Softmax: Converts outputs to probabilities that sum to 1
-    outputs = keras.layers.Dense(3, activation="softmax")(x)
-
-    # Create model
-    model = keras.Model(inputs=inputs, outputs=outputs)
-
-    return model
+def monitor_predictions(model, dataset, name="Dataset"):
+    """Monitor prediction distribution."""
+    predictions = model.predict(dataset)
+    pred_classes = np.argmax(predictions, axis=1)
+    
+    print(f"\n{name} Prediction Distribution:")
+    for i, count in enumerate(np.bincount(pred_classes)):
+        print(f"{config.CLASS_NAMES[i]}: {count} ({count/len(pred_classes)*100:.1f}%)")
+    
+    # Print confidence statistics
+    probs = keras.activations.softmax(predictions).numpy()
+    for i, class_name in enumerate(config.CLASS_NAMES):
+        confidences = probs[:, i]
+        print(f"\n{class_name} confidence:")
+        print(f"Mean: {np.mean(confidences):.3f}")
+        print(f"Std: {np.std(confidences):.3f}")
 
 def main():
     """
@@ -110,6 +110,8 @@ def main():
     """
     # Load and prepare datasets with augmentation
     train_ds, val_ds = create_dataset()
+    
+    show_classes(train_ds)
     tensorboard = TensorboardLauncher()
     tensorboard.start_tensorboard()
 
@@ -121,13 +123,23 @@ def main():
         print("Building and training new model...")
         model = build_model()
     model.compile(
-        optimizer=keras.optimizers.AdamW(learning_rate=0.00040288),
-        loss="categorical_crossentropy",
+        optimizer=keras.optimizers.AdamW(
+            learning_rate=0.001,
+            weight_decay=0.0001
+        ),
+        loss=keras.losses.CategoricalCrossentropy(
+            label_smoothing=0.1,
+            from_logits=False  # Since we're using softmax
+        ),
         metrics=[
             "accuracy",
-            keras.metrics.Precision(),
-            keras.metrics.Recall(),
-        ],
+            keras.metrics.Precision(class_id=0, name='precision_rock'),
+            keras.metrics.Precision(class_id=1, name='precision_paper'),
+            keras.metrics.Precision(class_id=2, name='precision_scissors'),
+        #     keras.metrics.Recall(class_id=0, name='recall_rock'),
+        #     keras.metrics.Recall(class_id=1, name='recall_paper'),
+        #     keras.metrics.Recall(class_id=2, name='recall_scissors'),
+        ]
     )
 
     # Display model architecture summary
@@ -147,13 +159,36 @@ def main():
             use_custom_callback=False,
             use_tensorboard=True
         )
+        y_train_labels = np.concatenate([y for x, y in train_ds], axis=0)  # Get training labels
+        y_train_labels = np.argmax(y_train_labels, axis=1)  # Convert one-hot to class indices
+
+        # Compute class weights
+        class_weights = compute_class_weights(train_ds)
+        print("Class weights:", class_weights)
         
         model.fit(
             train_ds,
             epochs=config.EPOCHS,
             validation_data=val_ds,
             callbacks=callbacks,
+            class_weight=class_weights  # Add class weights
         )
+
+
+
+# Get validation predictions
+    val_predictions = model.predict(val_ds)
+    predicted_classes = np.argmax(val_predictions, axis=1)
+    logits = model.predict(val_ds)
+    # probs = keras.activations.softmax(logits).numpy()
+    print(probs[:5])
+
+    # Print class distribution of predictions
+    print("Prediction Distribution:", np.bincount(predicted_classes))
+    print("Prediction Distribution:", np.bincount(predicted_classes))  # Check class imbalance
+
+    monitor_predictions(model, train_ds, "Training")
+    monitor_predictions(model, val_ds, "Validation")
 
 if __name__ == "__main__":
     main()
