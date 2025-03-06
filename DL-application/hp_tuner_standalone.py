@@ -26,11 +26,11 @@ CONFIG = {
     "TARGET_SIZE": (120, 160),
     # Training parameters
     "BATCH_SIZE": 32,
-    "EPOCHS": 10,
+    "EPOCHS": 20,  # Increased from 10 to allow proper convergence
     "VALIDATION_SPLIT": 0.2,
     "RANDOM_STATE": 42,
     "MAX_TRIALS": 10,
-    "MAX_EPOCH_SECONDS": 10,
+    "MAX_EPOCH_SECONDS": 30,  # Increased from 10 to allow more training time
     # Augmentation settings
     "AUGMENTATION_ENABLED": True,
     "RANDOM_BRIGHTNESS": 0.1,
@@ -43,7 +43,7 @@ CONFIG = {
     "RANDOM_TRANSLATION": 0.1,
     "RANDOM_ZOOM": 0.1,
     "RANDOM_ROTATION": 0.1,
-        # TensorBoard settings
+    # TensorBoard settings
     "TENSORBOARD_ENABLED": True,
     # Metrics
     "METRICS": ["accuracy", "precision", "recall"],
@@ -52,7 +52,6 @@ CONFIG = {
 
 # Create timestamp for output directory
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-#output_base = os.path.join(CONFIG["OUTPUT_DIR"], f"hp_tuner_{timestamp}")
 output_base = os.path.join(CONFIG["OUTPUT_DIR"], f"hp_tuner")
 
 # Create all necessary directories
@@ -104,17 +103,9 @@ class TimeoutCallback(keras.callbacks.Callback):
 
 class CustomCallback(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
-        if logs.get("val_accuracy") > 0.92 and logs.get("val_loss") < 0.3:
+        if logs.get("val_accuracy") > 0.95 and logs.get("val_loss") < 0.2:  # Higher threshold
             print("\nReached target metrics - stopping training")
             self.model.stop_training = True
-
-class ValLossEarlyStop(keras.callbacks.Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        if epoch == 4:  # Check after 5th epoch (0-based index)
-            val_loss = logs.get('val_loss')
-            if val_loss is not None and val_loss >= 10:
-                print(f"\nStopping training: val_loss {val_loss:.2f} >= 10 after 5 epochs")
-                self.model.stop_training = True
 
 
 def create_callbacks():
@@ -127,7 +118,7 @@ def create_callbacks():
             save_best_only=True,
         ),
         keras.callbacks.EarlyStopping(
-            monitor="val_loss", patience=5, min_delta=0.02, verbose=CONFIG["VERBOSE"]
+            monitor="val_loss", patience=7, min_delta=0.01, verbose=CONFIG["VERBOSE"]
         ),
         keras.callbacks.TensorBoard(
             log_dir=OUTPUT_DIRS["hp_tuner"]["logs"],
@@ -141,7 +132,7 @@ def create_callbacks():
         ),
         TimeoutCallback(max_epoch_seconds=CONFIG["MAX_EPOCH_SECONDS"]),
         CustomCallback(),
-        ValLossEarlyStop(),
+        # Removed ValLossEarlyStop to allow for better training
     ]
     return callbacks
 
@@ -208,7 +199,14 @@ def create_dataset_train():
         subset="training",
         follow_links=False,
     )
-
+    
+    # Apply data augmentation if enabled
+    if CONFIG["AUGMENTATION_ENABLED"]:
+        dataset = apply_augmentation(dataset)
+    
+    # Add prefetching for better performance
+    dataset = dataset.prefetch(AUTOTUNE)
+    
     return dataset
 
 
@@ -226,47 +224,82 @@ def create_dataset_val():
         subset="validation",
         follow_links=False,
     )
-
+    
+    # Add normalization layer but no augmentation
+    dataset = dataset.map(
+        lambda x, y: (tf.cast(x, tf.float32) / 255.0, y),
+        num_parallel_calls=AUTOTUNE
+    )
+    
+    # Add prefetching for better performance
+    dataset = dataset.prefetch(AUTOTUNE)
+    
     return dataset
 
 
 def create_dataset_test():
-    dataset = keras.utils.image_dataset_from_directory(
-        directory=CONFIG["DATASET_EXTERNAL_DIR"],
-        labels="inferred",
-        label_mode="categorical",
-        color_mode="rgb",
-        batch_size=CONFIG["BATCH_SIZE"],
-        image_size=CONFIG["IMAGE_DIMS"],
-        shuffle=True,
-        seed=CONFIG["RANDOM_STATE"],
-        validation_split=CONFIG["VALIDATION_SPLIT"],
-        subset="validation",
-        follow_links=False,
+    # Test dataset should use the full external dataset, not a validation split
+    try:
+        dataset = keras.utils.image_dataset_from_directory(
+            directory=CONFIG["DATASET_EXTERNAL_DIR"],
+            labels="inferred",
+            label_mode="categorical",
+            color_mode="rgb",
+            batch_size=CONFIG["BATCH_SIZE"],
+            image_size=CONFIG["IMAGE_DIMS"],
+            shuffle=False,  # Don't shuffle test data to maintain order
+            seed=CONFIG["RANDOM_STATE"],
+            # Not using validation_split parameters for test dataset
+            follow_links=False,
+        )
+    except ValueError as e:
+        print(f"Warning when creating test dataset: {str(e)}")
+        # Fallback - if external dataset requires validation_split for some reason
+        dataset = keras.utils.image_dataset_from_directory(
+            directory=CONFIG["DATASET_EXTERNAL_DIR"],
+            labels="inferred",
+            label_mode="categorical",
+            color_mode="rgb",
+            batch_size=CONFIG["BATCH_SIZE"],
+            image_size=CONFIG["IMAGE_DIMS"],
+            shuffle=False,
+            seed=CONFIG["RANDOM_STATE"],
+            validation_split=CONFIG["VALIDATION_SPLIT"],
+            subset="validation",
+            follow_links=False,
+        )
+        print("Using validation subset of external dataset as test dataset")
+    
+    # Add normalization layer but no augmentation
+    dataset = dataset.map(
+        lambda x, y: (tf.cast(x, tf.float32) / 255.0, y),
+        num_parallel_calls=AUTOTUNE
     )
-
+    
+    # Add prefetching for better performance
+    dataset = dataset.prefetch(AUTOTUNE)
+    
     return dataset
 
 
 def build_model(hp):
     """Build a CNN model with tunable hyperparameters."""
-    # Input layer with flexible dimensions for variable image sizes
-    inputs = keras.Input(shape=(None, None, 3))
+    # Input layer
+    inputs = keras.Input(shape=(CONFIG["IMAGE_DIMS"][0], CONFIG["IMAGE_DIMS"][1], 3))
 
-    # Skip preprocessing as it's handled in the dataset pipeline
+    # Resizing layer to standardize input
     x = keras.layers.Resizing(CONFIG["TARGET_SIZE"][0], CONFIG["TARGET_SIZE"][1])(
         inputs
     )
 
     # --------------------
-    # Normalization Layer
+    # Normalization Layer - Skip as normalization is handled in dataset pipeline
     # --------------------
     normalization_strategy = hp.Choice(
-        "Normalization Type", ["standard", "layer", "batch", "none"], default="batch"
+        "Normalization Type", ["layer", "batch", "none"], default="batch"
     )
-    if normalization_strategy == "standard":
-        x = keras.layers.Normalization()(x)
-    elif normalization_strategy == "layer":
+    
+    if normalization_strategy == "layer":
         x = keras.layers.LayerNormalization()(x)
     elif normalization_strategy == "batch":
         x = keras.layers.BatchNormalization()(x)
@@ -275,21 +308,21 @@ def build_model(hp):
     # Convolutional Layers
     # --------------------
     architecture_depth = hp.Int(
-        "Number of Convolutional Layers", min_value=1, max_value=2, default=1
+        "Number of Convolutional Layers", min_value=2, max_value=4, default=3
     )
 
     for i in range(architecture_depth):
-        # Conv layer hyperparameters with GPU-optimized ranges
+        # Conv layer hyperparameters
         feature_extractors = hp.Int(
             f"ConvBlock {i + 1}: Filters",
-            min_value=32,  # Minimum for feature detection
-            max_value=256,  # Maximum before diminishing returns
-            step=32,  # Power of 2 for GPU optimization
-            default=32,
+            min_value=32,
+            max_value=128,
+            step=32,
+            default=64,
         )
         activation_function = hp.Choice(
             f"ConvBlock {i + 1}: Activation Function",
-            ["relu", "leaky_relu", "selu", "tanh", "gelu"],
+            ["relu", "leaky_relu"],
             default="relu",
         )
         regularization_factor = hp.Float(
@@ -297,22 +330,22 @@ def build_model(hp):
             min_value=0.0,
             max_value=0.5,
             step=0.1,
-            default=0.0,
+            default=0.2,
         )
         perception_field = hp.Choice(
-            f"ConvBlock {i + 1}: Kernel Size", [3, 5, 7], default=3
+            f"ConvBlock {i + 1}: Kernel Size", [3, 5], default=3
         )
 
         # Regularization hyperparameters
         regularization_method = hp.Choice(
             f"ConvBlock {i + 1}: Regularization Strategy",
-            ["none", "l1", "l2", "l1_l2"],
-            default="none",
+            ["none", "l2"],
+            default="l2",
         )
         regularization_strength = hp.Float(
             f"ConvBlock {i + 1}: Regularization Strength",
             min_value=1e-5,
-            max_value=1e-2,
+            max_value=1e-3,
             sampling="log",
             default=1e-4,
         )
@@ -330,7 +363,7 @@ def build_model(hp):
             conv_regularizer = None
 
         # Convolutional layer construction
-        if hp.Boolean(f"ConvBlock {i + 1}: Enable Batch Normalization"):
+        if hp.Boolean(f"ConvBlock {i + 1}: Enable Batch Normalization", default=True):
             x = keras.layers.BatchNormalization()(x)
 
         x = keras.layers.Conv2D(
@@ -339,7 +372,11 @@ def build_model(hp):
             padding="same",
             kernel_regularizer=conv_regularizer,
         )(x)
-        x = keras.layers.Activation(activation_function)(x)
+        
+        if activation_function == "leaky_relu":
+            x = keras.layers.LeakyReLU()(x)
+        else:
+            x = keras.layers.Activation(activation_function)(x)
 
         # Spatial Reduction layer
         dimensionality_reduction = hp.Choice(
@@ -357,44 +394,44 @@ def build_model(hp):
     # --------------------
     # Dense Layers
     # --------------------
-    x = keras.layers.Flatten()(x)
+    x = keras.layers.GlobalAveragePooling2D()(x)  # Use global pooling instead of flatten
 
     classifier_depth = hp.Int(
-        "Number of Dense Layers", min_value=1, max_value=1, default=1
+        "Number of Dense Layers", min_value=1, max_value=2, default=1
     )
 
     for i in range(classifier_depth):
         # Dense layer hyperparameters
         neuron_count = hp.Int(
             f"DenseBlock {i + 1}: Units",
-            min_value=16,
-            max_value=128,
+            min_value=32,
+            max_value=256,
             step=32,
-            default=32,
+            default=128,
         )
         regularization_factor = hp.Float(
             f"DenseBlock {i + 1}: Dropout Rate",
             min_value=0.0,
             max_value=0.5,
             step=0.1,
-            default=0.0,
+            default=0.3,
         )
         activation_function = hp.Choice(
             f"DenseBlock {i + 1}: Activation Function",
-            ["relu", "selu", "leaky_relu"],
+            ["relu", "leaky_relu"],
             default="relu",
         )
 
         # Regularization hyperparameters
         regularization_method = hp.Choice(
             f"DenseBlock {i + 1}: Regularization Strategy",
-            ["none", "l1", "l2", "l1_l2"],
-            default="none",
+            ["none", "l2"],
+            default="l2",
         )
         regularization_strength = hp.Float(
             f"DenseBlock {i + 1}: Regularization Strength",
             min_value=1e-5,
-            max_value=1e-2,
+            max_value=1e-3,
             sampling="log",
             default=1e-4,
         )
@@ -413,9 +450,13 @@ def build_model(hp):
 
         # Dense layer construction
         x = keras.layers.Dense(neuron_count, kernel_regularizer=dense_regularizer)(x)
-        x = keras.layers.Activation(activation_function)(x)
+        
+        if activation_function == "leaky_relu":
+            x = keras.layers.LeakyReLU()(x)
+        else:
+            x = keras.layers.Activation(activation_function)(x)
 
-        if hp.Boolean(f"DenseBlock {i + 1}: Enable Batch Normalization"):
+        if hp.Boolean(f"DenseBlock {i + 1}: Enable Batch Normalization", default=True):
             x = keras.layers.BatchNormalization()(x)
 
         x = keras.layers.Dropout(regularization_factor)(x)
@@ -425,15 +466,15 @@ def build_model(hp):
     # --------------------
     learning_strategy = hp.Choice(
         "Learning Rate Schedule Type",
-        ["constant", "step", "exponential", "polynomial", "cosine"],
-        default="constant",
+        ["constant", "exponential", "cosine"],
+        default="cosine",
     )
 
     # Base learning rate for all strategies
     initial_learning_rate = hp.Float(
         "Initial Learning Rate",
         min_value=1e-4,
-        max_value=1e-1,
+        max_value=1e-2,
         sampling="log",
         default=1e-3,
     )
@@ -441,66 +482,32 @@ def build_model(hp):
     # Configure learning rate scheduler based on strategy
     if learning_strategy == "constant":
         learning_rate = initial_learning_rate
-    elif learning_strategy == "step":
-        decay_factor = hp.Float("Decay Rate", min_value=0.1, max_value=0.5, default=0.1)
-        learning_rate = keras.optimizers.schedules.InverseTimeDecay(
-            initial_learning_rate=initial_learning_rate,
-            decay_rate=decay_factor,
-            decay_steps=1,
-            staircase=True,
-        )
     elif learning_strategy == "exponential":
         decay_rate = hp.Float("Decay Rate", min_value=0.8, max_value=0.99, default=0.9)
         learning_rate = keras.optimizers.schedules.ExponentialDecay(
             initial_learning_rate=initial_learning_rate,
             decay_rate=decay_rate,
-            decay_steps=1,
-        )
-    elif learning_strategy == "polynomial":
-        final_learning_rate = hp.Float(
-            "Final Learning Rate",
-            min_value=1e-7,
-            max_value=1e-4,
-            sampling="log",
-            default=1e-6,
-        )
-        decay_power = hp.Float("Decay Power", min_value=1.0, max_value=3.0, default=1.0)
-        learning_rate = keras.optimizers.schedules.PolynomialDecay(
-            initial_learning_rate=initial_learning_rate,
-            decay_steps=CONFIG["EPOCHS"],
-            end_learning_rate=final_learning_rate,
-            power=decay_power,
+            decay_steps=100,
         )
     else:  # cosine
         min_learning_rate = hp.Float(
-            "Minimum Learning Rate", min_value=0.0, max_value=0.2, default=0.0
+            "Minimum Learning Rate", min_value=1e-6, max_value=1e-4, default=1e-5
         )
         learning_rate = keras.optimizers.schedules.CosineDecay(
             initial_learning_rate=initial_learning_rate,
-            decay_steps=CONFIG["EPOCHS"],
+            decay_steps=CONFIG["EPOCHS"] * 10,  # Multiply by steps per epoch
             alpha=min_learning_rate,
         )
 
     # --------------------
     # Model Compilation
     # --------------------
-    # Output layer with softmax activation for classification (keep in float32 for stability)
-    outputs = keras.layers.Dense(3, activation="softmax")(x)
+    # Output layer with softmax activation for classification
+    num_classes = 3  # rock, paper, scissors
+    outputs = keras.layers.Dense(num_classes, activation="softmax")(x)
     model = keras.Model(inputs=inputs, outputs=outputs)
 
-    
-    optimization_strategy = hp.Choice(
-        "Optimizer Type", ["Adam", "RMSprop", "SGD", "AdamW"], default="Adam"
-    )
-
-    if optimization_strategy == "Adam":
-        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
-    elif optimization_strategy == "RMSprop":
-        optimizer = keras.optimizers.RMSprop(learning_rate=learning_rate)
-    elif optimization_strategy == "AdamW":
-        optimizer = keras.optimizers.AdamW(learning_rate=learning_rate)
-    else:  # SGD
-        optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
+    optimizer = keras.optimizers.AdamW(learning_rate=learning_rate)
 
     model.compile(
         optimizer=optimizer,
@@ -522,10 +529,31 @@ def main():
     # Clear session and memory
     keras.utils.clear_session(free_memory=True)
 
-    # Load dataset
+    # First, get class names from a raw dataset before applying transformations
+    raw_train_ds = keras.utils.image_dataset_from_directory(
+        CONFIG["DATASET_ROOT_DIR"],
+        labels="inferred",
+        label_mode="categorical",
+        color_mode="rgb",
+        batch_size=CONFIG["BATCH_SIZE"],
+        image_size=CONFIG["IMAGE_DIMS"],
+        shuffle=True,
+        seed=CONFIG["RANDOM_STATE"],
+        validation_split=CONFIG["VALIDATION_SPLIT"],
+        subset="training",
+    )
+    class_names = raw_train_ds.class_names
+    print(f"Class names: {class_names}")
+    
+    # Now load the datasets with all transformations
     train_ds = create_dataset_train()
     val_ds = create_dataset_val()
     test_ds = create_dataset_test()
+    
+    # Print information about the datasets
+    print("Dataset information:")
+    for ds_name, ds in [("Training", train_ds), ("Validation", val_ds), ("Test", test_ds)]:
+        print(f"  {ds_name} dataset batches: {len(list(ds))}")
 
     # Start TensorBoard for monitoring if enabled
     start_tensorboard()
@@ -541,10 +569,10 @@ def main():
         seed=CONFIG["RANDOM_STATE"],
     )
 
-    # Perform hyperparameter search
+    # Perform hyperparameter search - use val_ds for validation, not test_ds
     tuner.search(
         train_ds,
-        validation_data=test_ds,
+        validation_data=val_ds,  # Use validation set, not test set
         epochs=CONFIG["EPOCHS"],
         callbacks=create_callbacks(),
     )
@@ -562,42 +590,111 @@ def main():
 
     # Train final model with best hyperparameters
     best_model = tuner.hypermodel.build(best_hp)
-    best_model.fit(
+    
+    # Use a longer training run for the final model with proper callbacks
+    final_callbacks = [
+        keras.callbacks.ModelCheckpoint(
+            os.path.join(OUTPUT_DIRS["hp_tuner"]["model"], "model_best_hp_tuner.keras"),
+            monitor="val_loss",
+            mode="min",
+            save_best_only=True,
+        ),
+        keras.callbacks.EarlyStopping(
+            monitor="val_loss", patience=10, min_delta=0.01, restore_best_weights=True
+        ),
+        keras.callbacks.TensorBoard(
+            log_dir=os.path.join(OUTPUT_DIRS["hp_tuner"]["logs"], "final_model")
+        )
+    ]
+    
+    history = best_model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=CONFIG["EPOCHS"],
+        epochs=CONFIG["EPOCHS"] * 2,  # Double epochs for final training
+        callbacks=final_callbacks,
     )
+    
+    # Save the training history plot
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Training Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+    plt.title('Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], 'training_history.png'))
+    plt.close()
+    
+    # Save the model
     model_path = os.path.join(OUTPUT_DIRS["hp_tuner"]["model"], "model_best_hp_tuner.keras")
     best_model.save(model_path)
+    print(f"Model saved to {model_path}")
 
-    # Evaluate model on test dataset and create a confusion matrix
-    test_results = best_model.evaluate(val_ds)
-    print("Test results:")
-    print(test_results)
+    # Evaluate model on both validation and test datasets
+    print("\nEvaluating on validation dataset:")
+    val_results = best_model.evaluate(val_ds)
+    for metric_name, value in zip(best_model.metrics_names, val_results):
+        print(f"  {metric_name}: {value:.4f}")
+    
+    print("\nEvaluating on test dataset:")
+    test_results = best_model.evaluate(test_ds)
+    for metric_name, value in zip(best_model.metrics_names, test_results):
+        print(f"  {metric_name}: {value:.4f}")
 
-    # Get predictions for test dataset
-    y_pred = best_model.predict(val_ds)
-    y_pred_classes = tf.argmax(y_pred, axis=1)
+    # Create confusion matrices for both validation and test datasets
+    def create_confusion_matrix(dataset, dataset_name):
+        all_predictions = []
+        all_labels = []
+        
+        # Collect predictions and labels batch by batch
+        for images, labels in dataset:
+            predictions = best_model.predict_on_batch(images)
+            predictions = tf.argmax(predictions, axis=1).numpy()
+            labels = tf.argmax(labels, axis=1).numpy()
+            
+            all_predictions.extend(predictions)
+            all_labels.extend(labels)
+        
+        cm = confusion_matrix(all_labels, all_predictions)
+        
+        # Create confusion matrix plot
+        plt.figure(figsize=(10, 8))
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=cm,
+            display_labels=class_names
+        )
+        disp.plot(cmap='Blues', values_format='d')
+        plt.title(f'Confusion Matrix - {dataset_name}')
+        
+        # Save the plot
+        plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], f'confusion_matrix_{dataset_name.lower()}.png'))
+        plt.close()
+        
+        return cm
+    
+    # Create confusion matrices
+    val_cm = create_confusion_matrix(val_ds, "Validation Dataset")
+    test_cm = create_confusion_matrix(test_ds, "Test Dataset")
+    
+    print("\nConfusion Matrix - Validation Dataset:")
+    print(val_cm)
+    
+    print("\nConfusion Matrix - Test Dataset:")
+    print(test_cm)
+    
+    print("\nTraining and evaluation complete.")
 
-    # Get true labels (need to unbatch the test dataset)
-    y_true = tf.concat([y for _, y in val_ds], axis=0)
-    y_true_classes = tf.argmax(y_true, axis=1)
-
-    # Calculate confusion matrix
-    cm = confusion_matrix(y_true_classes, y_pred_classes)
-
-    # Create confusion matrix plot
-    plt.figure(figsize=(10, 8))
-    disp = ConfusionMatrixDisplay(
-        confusion_matrix=cm,
-        display_labels=['paper', 'rock', 'scissors']
-    )
-    disp.plot(cmap='Blues', values_format='d')
-    plt.title('Confusion Matrix - Test Dataset')
-
-    # Save the plot
-    plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], 'confusion_matrix.png'))
-    plt.close()
 
 if __name__ == "__main__":
     main()
