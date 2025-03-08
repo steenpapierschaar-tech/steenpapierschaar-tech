@@ -19,14 +19,14 @@ AUTOTUNE = tf.data.AUTOTUNE
 CONFIG = {
     # Directories
     "DATASET_ROOT_DIR": "photoDataset",
-    "DATASET_EXTERNAL_DIR": "photoDataset_external",
-    "OUTPUT_DIR": "output",
+    "DATASET_EXTERNAL_DIR": "photoDataset",
+    "OUTPUT_DIR": "/Volumes/dnn/output",
     # Image parameters
     "IMAGE_DIMS": (240, 320),
     "TARGET_SIZE": (120, 160),
     # Training parameters
     "BATCH_SIZE": 32,
-    "EPOCHS": 20,  # Increased from 10 to allow proper convergence
+    "EPOCHS": 90,
     "VALIDATION_SPLIT": 0.2,
     "RANDOM_STATE": 42,
     "MAX_TRIALS": 10,
@@ -559,11 +559,12 @@ def main():
     start_tensorboard()
 
     print("Starting hyperparameter tuning...")
-    # Configure Bayesian Optimization tuner
-    tuner = keras_tuner.tuners.BayesianOptimization(
+    # Configure Hyperband tuner
+    tuner = keras_tuner.Hyperband(
         build_model,
         objective="val_loss",
-        max_trials=CONFIG["MAX_TRIALS"],
+        max_epochs=CONFIG["EPOCHS"],
+        factor=3,
         directory=OUTPUT_DIRS["hp_tuner"]["model"],
         project_name="hyperparameter_tuning",
         seed=CONFIG["RANDOM_STATE"],
@@ -577,121 +578,125 @@ def main():
         callbacks=create_callbacks(),
     )
 
-    # Save best hyperparameters
-    best_hp = tuner.get_best_hyperparameters(1)[0]
-    with open(
-        os.path.join(
-            OUTPUT_DIRS["hp_tuner"]["model"], "hyperparameters_hp_tuner.txt"
-        ),
-        "w",
-    ) as f:
-        for param, value in best_hp.values.items():
-            f.write(f"{param}: {value}\n")
-
-    # Train final model with best hyperparameters
-    best_model = tuner.hypermodel.build(best_hp)
+    # Get top 5 best hyperparameters
+    best_hps = tuner.get_best_hyperparameters(10)
+    best_models = []
     
-    # Use a longer training run for the final model with proper callbacks
-    final_callbacks = [
-        keras.callbacks.ModelCheckpoint(
-            os.path.join(OUTPUT_DIRS["hp_tuner"]["model"], "model_best_hp_tuner.keras"),
-            monitor="val_loss",
-            mode="min",
-            save_best_only=True,
-        ),
-        keras.callbacks.EarlyStopping(
-            monitor="val_loss", patience=10, min_delta=0.01, restore_best_weights=True
-        ),
-        keras.callbacks.TensorBoard(
-            log_dir=os.path.join(OUTPUT_DIRS["hp_tuner"]["logs"], "final_model")
+    # Save hyperparameters and train models for each of the top 5 configurations
+    for idx, hp in enumerate(best_hps):
+        # Save hyperparameters to file
+        with open(
+            os.path.join(
+                OUTPUT_DIRS["hp_tuner"]["model"], f"hyperparameters_hp_tuner_model{idx+1}.txt"
+            ),
+            "w",
+        ) as f:
+            f.write(f"Model {idx+1} Hyperparameters:\n")
+            for param, value in hp.values.items():
+                f.write(f"{param}: {value}\n")
+
+        # Train model with these hyperparameters
+        model = tuner.hypermodel.build(hp)
+    
+        # Use a longer training run for each model with proper callbacks
+        final_callbacks = [
+            keras.callbacks.ModelCheckpoint(
+                os.path.join(OUTPUT_DIRS["hp_tuner"]["model"], f"model_hp_tuner_{idx+1}.keras"),
+                monitor="val_loss",
+                mode="min",
+                save_best_only=True,
+            ),
+            keras.callbacks.EarlyStopping(
+                monitor="val_loss", patience=10, min_delta=0.01, restore_best_weights=True
+            ),
+            keras.callbacks.TensorBoard(
+                log_dir=os.path.join(OUTPUT_DIRS["hp_tuner"]["logs"], f"final_model_{idx+1}")
+            )
+        ]
+        
+        print(f"\nTraining model {idx+1} of 5...")
+        history = model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=CONFIG["EPOCHS"] * 2,  # Double epochs for final training
+            callbacks=final_callbacks,
         )
-    ]
+        best_models.append(model)
     
-    history = best_model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=CONFIG["EPOCHS"] * 2,  # Double epochs for final training
-        callbacks=final_callbacks,
-    )
-    
-    # Save the training history plot
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Training Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.title('Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], 'training_history.png'))
-    plt.close()
-    
-    # Save the model
-    model_path = os.path.join(OUTPUT_DIRS["hp_tuner"]["model"], "model_best_hp_tuner.keras")
-    best_model.save(model_path)
-    print(f"Model saved to {model_path}")
-
-    # Evaluate model on both validation and test datasets
-    print("\nEvaluating on validation dataset:")
-    val_results = best_model.evaluate(val_ds)
-    for metric_name, value in zip(best_model.metrics_names, val_results):
-        print(f"  {metric_name}: {value:.4f}")
-    
-    print("\nEvaluating on test dataset:")
-    test_results = best_model.evaluate(test_ds)
-    for metric_name, value in zip(best_model.metrics_names, test_results):
-        print(f"  {metric_name}: {value:.4f}")
-
-    # Create confusion matrices for both validation and test datasets
-    def create_confusion_matrix(dataset, dataset_name):
-        all_predictions = []
-        all_labels = []
+        # Save the training history plot
+        plt.figure(figsize=(12, 5))
+        plt.subplot(1, 2, 1)
+        plt.plot(history.history['accuracy'], label='Training Accuracy')
+        plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+        plt.title(f'Model {idx+1} Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
         
-        # Collect predictions and labels batch by batch
-        for images, labels in dataset:
-            predictions = best_model.predict_on_batch(images)
-            predictions = tf.argmax(predictions, axis=1).numpy()
-            labels = tf.argmax(labels, axis=1).numpy()
-            
-            all_predictions.extend(predictions)
-            all_labels.extend(labels)
+        plt.subplot(1, 2, 2)
+        plt.plot(history.history['loss'], label='Training Loss')
+        plt.plot(history.history['val_loss'], label='Validation Loss')
+        plt.title(f'Model {idx+1} Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
         
-        cm = confusion_matrix(all_labels, all_predictions)
-        
-        # Create confusion matrix plot
-        plt.figure(figsize=(10, 8))
-        disp = ConfusionMatrixDisplay(
-            confusion_matrix=cm,
-            display_labels=class_names
-        )
-        disp.plot(cmap='Blues', values_format='d')
-        plt.title(f'Confusion Matrix - {dataset_name}')
-        
-        # Save the plot
-        plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], f'confusion_matrix_{dataset_name.lower()}.png'))
+        plt.tight_layout()
+        plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], f'training_history_model{idx+1}.png'))
         plt.close()
+
+        # Evaluate model on both validation and test datasets
+        print(f"\nEvaluating model {idx+1} on validation dataset:")
+        val_results = model.evaluate(val_ds)
+        for metric_name, value in zip(model.metrics_names, val_results):
+            print(f"  {metric_name}: {value:.4f}")
         
-        return cm
-    
-    # Create confusion matrices
-    val_cm = create_confusion_matrix(val_ds, "Validation Dataset")
-    test_cm = create_confusion_matrix(test_ds, "Test Dataset")
-    
-    print("\nConfusion Matrix - Validation Dataset:")
-    print(val_cm)
-    
-    print("\nConfusion Matrix - Test Dataset:")
-    print(test_cm)
+        print(f"\nEvaluating model {idx+1} on test dataset:")
+        test_results = model.evaluate(test_ds)
+        for metric_name, value in zip(model.metrics_names, test_results):
+            print(f"  {metric_name}: {value:.4f}")
+
+        # Create confusion matrices for both validation and test datasets
+        def create_confusion_matrix(dataset, dataset_name, model_idx):
+            all_predictions = []
+            all_labels = []
+            
+            # Collect predictions and labels batch by batch
+            for images, labels in dataset:
+                predictions = model.predict_on_batch(images)
+                predictions = tf.argmax(predictions, axis=1).numpy()
+                labels = tf.argmax(labels, axis=1).numpy()
+                
+                all_predictions.extend(predictions)
+                all_labels.extend(labels)
+            
+            cm = confusion_matrix(all_labels, all_predictions)
+            
+            # Create confusion matrix plot
+            plt.figure(figsize=(10, 8))
+            disp = ConfusionMatrixDisplay(
+                confusion_matrix=cm,
+                display_labels=class_names
+            )
+            disp.plot(cmap='Blues', values_format='d')
+            plt.title(f'Model {model_idx+1} Confusion Matrix - {dataset_name}')
+            
+            # Save the plot
+            plt.savefig(os.path.join(OUTPUT_DIRS["hp_tuner"]["plots"], 
+                       f'confusion_matrix_model{model_idx+1}_{dataset_name.lower()}.png'))
+            plt.close()
+            
+            return cm
+        
+        # Create confusion matrices for current model
+        val_cm = create_confusion_matrix(val_ds, "Validation Dataset", idx)
+        test_cm = create_confusion_matrix(test_ds, "Test Dataset", idx)
+        
+        print(f"\nModel {idx+1} Confusion Matrix - Validation Dataset:")
+        print(val_cm)
+        
+        print(f"\nModel {idx+1} Confusion Matrix - Test Dataset:")
+        print(test_cm)
     
     print("\nTraining and evaluation complete.")
 
