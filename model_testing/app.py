@@ -5,16 +5,19 @@ import cv2
 import numpy as np
 import base64
 import os
+import json
 
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-# Model configuration
-DEFAULT_IMAGE_SIZE = (128, 96)  # Fallback dimensions if model has dynamic input shape
+# Model configuration - updated to match hp_tuner_standalone.py
+IMAGE_DIMS = (240, 320)  # Match hp_tuner IMAGE_DIMS 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model')
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_PATH = os.path.join(MODEL_DIR, 'current_model.keras')
+CLASS_NAMES_PATH = os.path.join(MODEL_DIR, 'class_names.json')
 model = None
+class_names = ['rock', 'paper', 'scissors']  # Default order from hypertuner
 
 @app.route('/')
 def index():
@@ -28,6 +31,18 @@ def upload_model():
     file = request.files['model']
     if file.filename == '' or not file.filename.endswith('.keras'):
         return jsonify({'error': 'Invalid file format. Please upload .keras file'}), 400
+    
+    # Handle optional class names file
+    if 'class_names' in request.files:
+        class_file = request.files['class_names']
+        if class_file.filename != '':
+            try:
+                class_file.save(CLASS_NAMES_PATH)
+                with open(CLASS_NAMES_PATH, 'r') as f:
+                    global class_names
+                    class_names = json.load(f)
+            except Exception as e:
+                return jsonify({'error': f'Failed to load class names: {str(e)}'}), 400
     
     try:
         global model
@@ -44,34 +59,18 @@ def upload_model():
         model.summary()
         sys.stdout = sys.__stdout__
         
-        # Add output shape information and detect encoding type
+        # Get input and output shape information
+        input_shape = model.input_shape[1:]
         output_shape = model.output_shape[-1]
-        global is_categorical
-        is_categorical = output_shape > 1
-        summary_io.write(f"\nModel Output Classes: {output_shape}")
-        summary_io.write(f"\nEncoding Type: {'Categorical' if is_categorical else 'Integer'}\n")
         
-        # Try to get class indices if available
-        try:
-            if hasattr(model, 'get_config'):
-                config = model.get_config()
-                if isinstance(config, dict) and 'class_indices' in config:
-                    class_indices = config['class_indices']
-                    summary_io.write(f"Class Names: {', '.join(sorted(class_indices.keys()))}\n")
-        except Exception as e:
-            summary_io.write("Note: Class names not stored in model configuration\n")
-            
-        # Store the number of output classes for predictions
-        global class_names
-        class_names = ['paper', 'rock', 'scissors']  # Default fallback
-        if output_shape == len(class_names):
-            summary_io.write(f"\nUsing default class mapping: {', '.join(class_names)}\n")
-        else:
-            summary_io.write(f"\nWarning: Model output shape ({output_shape}) doesn't match default classes ({len(class_names)})\n")
+        summary_io.write(f"\nModel Input Shape: {input_shape}")
+        summary_io.write(f"\nModel Output Classes: {output_shape}")
+        summary_io.write(f"\nUsing class names: {', '.join(class_names)}")
         
         return jsonify({
             'success': 'Model uploaded successfully',
-            'model_summary': summary_io.getvalue()
+            'model_summary': summary_io.getvalue(),
+            'class_names': class_names
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -90,45 +89,36 @@ def handle_frame(frame_data):
         
         # Preprocess and predict
         try:
-            # Use model's input shape if valid, otherwise fall back to default size
-            model_input_shape = model.input_shape[1:3]
-            using_fallback = None in model_input_shape
-            target_size = DEFAULT_IMAGE_SIZE if using_fallback else model_input_shape[::-1]
+            # Resize to match the model's expected input dimensions from hp_tuner
+            # Note: OpenCV uses (width, height) order, but our constants are (height, width)
+            processed_frame = cv2.resize(frame, (IMAGE_DIMS[1], IMAGE_DIMS[0]))
             
-            # Show what input shape is being used
-            message = (
-                f"Model input shape: {model.input_shape}\n"
-                f"Using {'fallback' if using_fallback else 'model'} dimensions: {target_size}"
-            )
-            emit('model_info', {'message': message})
+            # Normalize pixel values as done in hp_tuner
+            processed_frame = processed_frame.astype(np.float32) / 255.0
             
-            # Resize frame
-            processed_frame = cv2.resize(frame, target_size)
-            
+            # Add batch dimension
             processed_frame = np.expand_dims(processed_frame, axis=0)
+            
+            # Make prediction
             prediction = model.predict(processed_frame, verbose=0)
             
-            # Use global class names for predictions
-            global class_names, is_categorical
-            
-            if is_categorical:
+            # Process prediction (always categorical for hp_tuner models)
             probabilities = [float(p) for p in prediction[0]]
             class_idx = np.argmax(probabilities)
-                confidence = probabilities[class_idx]
-            else:
-                class_idx = int(prediction[0][0])
-                probabilities = [1.0 if i == class_idx else 0.0 for i in range(len(class_names))]
-                confidence = 1.0
+            confidence = probabilities[class_idx]
+            
+            # Use global class names for predictions
+            global class_names
             
             emit('prediction', {
                 'classes': class_names,
                 'probabilities': probabilities,
                 'highest_class': class_names[class_idx],
-                'encoding_type': 'categorical' if is_categorical else 'integer',
+                'encoding_type': 'categorical',
                 'confidence': confidence
             })
         except Exception as e:
-            emit('error', {'message': str(e)})
+            emit('error', {'message': f'Prediction error: {str(e)}'})
     except Exception as e:
         emit('error', {'message': f'Frame processing error: {str(e)}'})
 
